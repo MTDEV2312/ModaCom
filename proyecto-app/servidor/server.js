@@ -11,15 +11,31 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve u
 app.use(cors());
 app.use(express.json());
 
-const port = 5000;
-const db = mysql.createConnection({
-    host: "bsilxtymytu9tdvkiums-mysql.services.clever-cloud.com",
-    user: "uchintchb35anynk",
-    password: "cshhRF4OxXbOn9lmMci9",
-    database: "bsilxtymytu9tdvkiums",
+const port = Number(process.env.PORT) || 5000;
+const dbHost = process.env.MYSQL_ADDON_HOST || process.env.DB_HOST || "localhost";
+const dbUser = process.env.MYSQL_ADDON_USER || process.env.DB_USER || "modacom";
+const dbPassword = process.env.MYSQL_ADDON_PASSWORD || process.env.DB_PASSWORD || "root";
+const dbName = process.env.MYSQL_ADDON_DB || process.env.DB_NAME || "modacom";
+const dbPort = Number(process.env.MYSQL_ADDON_PORT || process.env.DB_PORT || 3306);
+
+const db = mysql.createPool({
+    host: dbHost,
+    user: dbUser,
+    password: dbPassword,
+    database: dbName,
+    port: dbPort,
+    connectionLimit: 10,
+    waitForConnections: true,
+    queueLimit: 0,
 });
 
-db.connect((err) => {
+db.on("connection", (connection) => {
+    connection.on("error", (err) => {
+        console.error("Database connection error:", err.code || err.message);
+    });
+});
+
+db.query("SELECT 1", (err) => {
     if (err) {
         console.error("Error connecting to the database:", err);
         process.exit(1); // Salir del proceso si no se puede conectar
@@ -202,6 +218,6 @@ app.get("/api/products/:ID/image", (req, res) => {
     });
 });
 
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
     console.log(`Listening on port ${port}`);
 });
