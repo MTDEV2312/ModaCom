@@ -1,26 +1,31 @@
-FROM node:20-alpine AS frontend-builder
+FROM node:20-alpine AS base
 
-WORKDIR /app/client
-COPY proyecto-app/client/package*.json ./
+WORKDIR /app
+COPY package*.json ./
 RUN npm ci
-COPY proyecto-app/client/ ./
+
+FROM base AS dev
+
+ENV NODE_ENV=development
+EXPOSE 3000
+CMD ["npm", "run", "dev", "--", "--hostname", "0.0.0.0", "--port", "3000"]
+
+FROM base AS build
+
+COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS backend-deps
+FROM node:20-alpine AS production
 
-WORKDIR /app/servidor
-COPY proyecto-app/servidor/package*.json ./
-RUN npm ci --omit=dev
-
-FROM node:20-alpine AS runtime
-
-WORKDIR /app/servidor
+WORKDIR /app
 ENV NODE_ENV=production
-ENV PORT=5000
+ENV PORT=3000
 
-COPY --from=backend-deps /app/servidor/node_modules ./node_modules
-COPY proyecto-app/servidor/ ./
-COPY --from=frontend-builder /app/client/build ./public
+COPY --from=build /app/package*.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+COPY --from=build /app/next.config.ts ./next.config.ts
 
-EXPOSE 5000
-CMD ["node", "server.js"]
+EXPOSE 3000
+CMD ["npm", "run", "start"]
