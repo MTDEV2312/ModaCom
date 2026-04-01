@@ -1,6 +1,10 @@
 import { Category } from "./Category";
+import { Cart } from "./Cart";
+import { CartItem } from "./CartItem";
 import { Offer } from "./Offer";
 import { OfferCategory } from "./OfferCategory";
+import { Order } from "./Order";
+import { OrderItem } from "./OrderItem";
 import { Product } from "./Product";
 import { ProductColor } from "./ProductColor";
 import { ProductImage } from "./ProductImage";
@@ -40,7 +44,41 @@ export function initModelAssociations() {
     as: "offers",
   });
 
+  User.hasMany(Cart, { foreignKey: "userId", as: "carts" });
+  Cart.belongsTo(User, { foreignKey: "userId", as: "user" });
+
+  Cart.hasMany(CartItem, { foreignKey: "cartId", as: "items" });
+  CartItem.belongsTo(Cart, { foreignKey: "cartId", as: "cart" });
+
+  Product.hasMany(CartItem, { foreignKey: "productId", as: "cartItems" });
+  CartItem.belongsTo(Product, { foreignKey: "productId", as: "product" });
+
+  User.hasMany(Order, { foreignKey: "userId", as: "orders" });
+  Order.belongsTo(User, { foreignKey: "userId", as: "user" });
+
+  Cart.hasOne(Order, { foreignKey: "cartId", as: "order" });
+  Order.belongsTo(Cart, { foreignKey: "cartId", as: "cart" });
+
+  Order.hasMany(OrderItem, { foreignKey: "orderId", as: "items" });
+  OrderItem.belongsTo(Order, { foreignKey: "orderId", as: "order" });
+
+  Product.hasMany(OrderItem, { foreignKey: "productId", as: "orderItems" });
+  OrderItem.belongsTo(Product, { foreignKey: "productId", as: "product" });
+
   initialized = true;
 }
 
-export { Category, Offer, OfferCategory, Product, ProductColor, ProductImage, ProductSize, User };
+export {
+  Cart,
+  CartItem,
+  Category,
+  Offer,
+  OfferCategory,
+  Order,
+  OrderItem,
+  Product,
+  ProductColor,
+  ProductImage,
+  ProductSize,
+  User,
+};
