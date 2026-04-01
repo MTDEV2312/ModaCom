@@ -1,4 +1,5 @@
 import { Op } from "sequelize";
+import bcrypt from "bcryptjs";
 import { sequelize } from "./sequelize";
 import {
   Category,
@@ -8,6 +9,7 @@ import {
   ProductColor,
   ProductImage,
   ProductSize,
+  User,
   initModelAssociations,
 } from "./models";
 
@@ -179,5 +181,17 @@ async function seedBaseCatalog() {
         categoryId: category.id,
       })),
     );
+  }
+
+  const adminUser = await User.findOne({ where: { email: "admin@moda.com" } });
+  if (!adminUser) {
+    const passwordHash = await bcrypt.hash("admin123", 10);
+    await User.create({
+      email: "admin@moda.com",
+      passwordHash,
+      firstName: "Admin",
+      lastName: "Moda",
+      role: "admin",
+    });
   }
 }

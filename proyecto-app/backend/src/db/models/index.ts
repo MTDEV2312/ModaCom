@@ -5,6 +5,7 @@ import { Product } from "./Product";
 import { ProductColor } from "./ProductColor";
 import { ProductImage } from "./ProductImage";
 import { ProductSize } from "./ProductSize";
+import { User } from "./User";
 
 let initialized = false;
 
@@ -42,4 +43,4 @@ export function initModelAssociations() {
   initialized = true;
 }
 
-export { Category, Offer, OfferCategory, Product, ProductColor, ProductImage, ProductSize };
+export { Category, Offer, OfferCategory, Product, ProductColor, ProductImage, ProductSize, User };
