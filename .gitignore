@@ -75,3 +75,13 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+/proyecto-app/web/.agents
+/proyecto-app/web/.claude
+/proyecto-app/web/.windsurf
+
+/proyecto-app/backend/.agents
+/proyecto-app/backend/.claude
+/proyecto-app/backend/.windsurf
+
+
