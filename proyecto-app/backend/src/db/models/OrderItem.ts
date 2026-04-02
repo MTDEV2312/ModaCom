@@ -5,6 +5,7 @@ interface OrderItemAttributes {
   id: number;
   orderId: number;
   productId: number;
+  variantId?: number | null;
   productName: string;
   quantity: number;
   unitPrice: number;
@@ -15,12 +16,13 @@ interface OrderItemAttributes {
 }
 
 interface OrderItemCreationAttributes
-  extends Optional<OrderItemAttributes, "id" | "sizeName" | "colorName" | "createdAt" | "updatedAt"> {}
+  extends Optional<OrderItemAttributes, "id" | "variantId" | "sizeName" | "colorName" | "createdAt" | "updatedAt"> {}
 
 class OrderItem extends Model<OrderItemAttributes, OrderItemCreationAttributes> implements OrderItemAttributes {
   public id!: number;
   public orderId!: number;
   public productId!: number;
+  public variantId?: number | null;
   public productName!: string;
   public quantity!: number;
   public unitPrice!: number;
@@ -55,6 +57,16 @@ OrderItem.init(
         key: "id",
       },
       onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    },
+    variantId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      references: {
+        model: "product_variants",
+        key: "id",
+      },
+      onDelete: "SET NULL",
       onUpdate: "CASCADE",
     },
     productName: {

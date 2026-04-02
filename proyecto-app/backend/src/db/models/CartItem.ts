@@ -5,6 +5,7 @@ interface CartItemAttributes {
   id: number;
   cartId: number;
   productId: number;
+  variantId?: number | null;
   quantity: number;
   unitPrice: number;
   sizeName?: string | null;
@@ -14,12 +15,13 @@ interface CartItemAttributes {
 }
 
 interface CartItemCreationAttributes
-  extends Optional<CartItemAttributes, "id" | "sizeName" | "colorName" | "createdAt" | "updatedAt"> {}
+  extends Optional<CartItemAttributes, "id" | "variantId" | "sizeName" | "colorName" | "createdAt" | "updatedAt"> {}
 
 class CartItem extends Model<CartItemAttributes, CartItemCreationAttributes> implements CartItemAttributes {
   public id!: number;
   public cartId!: number;
   public productId!: number;
+  public variantId?: number | null;
   public quantity!: number;
   public unitPrice!: number;
   public sizeName?: string | null;
@@ -53,6 +55,16 @@ CartItem.init(
         key: "id",
       },
       onDelete: "RESTRICT",
+      onUpdate: "CASCADE",
+    },
+    variantId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      references: {
+        model: "product_variants",
+        key: "id",
+      },
+      onDelete: "SET NULL",
       onUpdate: "CASCADE",
     },
     quantity: {

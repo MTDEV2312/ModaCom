@@ -10,6 +10,7 @@ import { Product } from "./Product";
 import { ProductColor } from "./ProductColor";
 import { ProductImage } from "./ProductImage";
 import { ProductSize } from "./ProductSize";
+import { ProductVariant } from "./ProductVariant";
 import { RefreshToken } from "./RefreshToken";
 import { User } from "./User";
 
@@ -31,6 +32,9 @@ export function initModelAssociations() {
 
   Product.hasMany(ProductColor, { foreignKey: "productId", as: "colors" });
   ProductColor.belongsTo(Product, { foreignKey: "productId", as: "product" });
+
+  Product.hasMany(ProductVariant, { foreignKey: "productId", as: "variants" });
+  ProductVariant.belongsTo(Product, { foreignKey: "productId", as: "product" });
 
   Offer.belongsToMany(Category, {
     through: OfferCategory,
@@ -55,6 +59,9 @@ export function initModelAssociations() {
   Product.hasMany(CartItem, { foreignKey: "productId", as: "cartItems" });
   CartItem.belongsTo(Product, { foreignKey: "productId", as: "product" });
 
+  ProductVariant.hasMany(CartItem, { foreignKey: "variantId", as: "cartItems" });
+  CartItem.belongsTo(ProductVariant, { foreignKey: "variantId", as: "variant" });
+
   User.hasMany(Order, { foreignKey: "userId", as: "orders" });
   Order.belongsTo(User, { foreignKey: "userId", as: "user" });
 
@@ -69,6 +76,9 @@ export function initModelAssociations() {
 
   Product.hasMany(OrderItem, { foreignKey: "productId", as: "orderItems" });
   OrderItem.belongsTo(Product, { foreignKey: "productId", as: "product" });
+
+  ProductVariant.hasMany(OrderItem, { foreignKey: "variantId", as: "orderItems" });
+  OrderItem.belongsTo(ProductVariant, { foreignKey: "variantId", as: "variant" });
 
   initialized = true;
 }
@@ -86,6 +96,7 @@ export {
   ProductColor,
   ProductImage,
   ProductSize,
+  ProductVariant,
   RefreshToken,
   User,
 };

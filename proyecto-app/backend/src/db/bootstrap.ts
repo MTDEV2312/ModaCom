@@ -9,6 +9,7 @@ import {
   ProductColor,
   ProductImage,
   ProductSize,
+  ProductVariant,
   User,
   initModelAssociations,
 } from "./models";
@@ -150,6 +151,31 @@ async function seedBaseCatalog() {
           hex: color.hex,
           available: true,
         })),
+      );
+
+      const combinations = seed.sizes.flatMap((sizeName) =>
+        seed.colors.map((color) => ({
+          sizeName,
+          colorName: color.name,
+        })),
+      );
+
+      const baseStock = Math.floor(seed.stock / combinations.length);
+      let remainder = seed.stock % combinations.length;
+
+      await ProductVariant.bulkCreate(
+        combinations.map((combination) => {
+          const extra = remainder > 0 ? 1 : 0;
+          remainder = Math.max(0, remainder - 1);
+
+          return {
+            productId: product.id,
+            sizeName: combination.sizeName,
+            colorName: combination.colorName,
+            stock: baseStock + extra,
+            isActive: true,
+          };
+        }),
       );
     }
   }
