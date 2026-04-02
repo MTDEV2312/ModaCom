@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { Router } from "express";
 import { Op } from "sequelize";
 import { User } from "../../db/models/User";
+import { Address } from "../../db/models/Address";
 import { RefreshToken } from "../../db/models/RefreshToken";
 import { requireAuth, signAccessToken, signRefreshToken, verifyRefreshToken } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
@@ -130,10 +131,24 @@ authV1Router.post("/auth/login", validateBody(authLoginSchema), async (req: any,
 
 authV1Router.get("/auth/me", requireAuth, async (req: any, res: any) => {
   try {
-    const user = await User.findByPk(req.auth.userId);
+    const user = await User.findByPk(req.auth.userId, {
+      include: [{ model: Address, as: "addresses" }],
+    });
     if (!user) {
       return res.status(404).json({ success: false, data: null, message: "Usuario no encontrado" });
     }
+
+    const addresses = ((user.get("addresses") as Address[] | undefined) ?? []).map((address) => ({
+      id: String(address.id),
+      street: address.street,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+      country: address.country,
+      isDefault: address.isDefault,
+      createdAt: address.createdAt.toISOString(),
+      updatedAt: address.updatedAt.toISOString(),
+    }));
 
     return res.status(200).json({
       success: true,
@@ -143,6 +158,7 @@ authV1Router.get("/auth/me", requireAuth, async (req: any, res: any) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        addresses,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
       },

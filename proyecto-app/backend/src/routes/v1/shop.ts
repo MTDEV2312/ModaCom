@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { Transaction } from "sequelize";
 import { sequelize } from "../../db/sequelize";
-import { Cart, CartItem, Category, Order, OrderItem, Product, ProductImage, ProductVariant } from "../../db/models";
+import { Address, Cart, CartItem, Category, Order, OrderItem, Product, ProductImage, ProductVariant } from "../../db/models";
 import { requireAuth } from "../../middleware/auth";
 import { validateBody, validateParams } from "../../middleware/validate";
-import { cartAddItemSchema, cartUpdateItemSchema, itemIdParamSchema } from "../../validation/schemas";
+import { cartAddItemSchema, cartUpdateItemSchema, itemIdParamSchema, orderCreateSchema } from "../../validation/schemas";
 
 export const shopV1Router = Router();
 
@@ -18,6 +18,7 @@ type CartItemWithRelations = CartItem & {
 
 type OrderWithItems = Order & {
   items?: OrderItem[];
+  address?: Address;
 };
 
 const SHIPPING_COST = 0;
@@ -88,14 +89,35 @@ function mapCart(cart: Cart, items: CartItemWithRelations[]) {
 
 function mapOrder(order: OrderWithItems) {
   const items = (order.get("items") as OrderItem[] | undefined) ?? [];
+  const address = order.get("address") as Address | undefined;
   return {
     id: String(order.id),
+    addressId: order.addressId == null ? undefined : String(order.addressId),
     status: order.status,
     paymentStatus: order.paymentStatus,
     subtotal: Number(order.subtotal),
     discountTotal: Number(order.discountTotal),
     shippingTotal: Number(order.shippingTotal),
     total: Number(order.total),
+    shippingAddress: address
+      ? {
+          id: String(address.id),
+          street: address.street,
+          city: address.city,
+          state: address.state,
+          postalCode: address.postalCode,
+          country: address.country,
+          isDefault: address.isDefault,
+        }
+      : order.shippingStreet
+        ? {
+            street: order.shippingStreet,
+            city: order.shippingCity ?? "",
+            state: order.shippingState ?? "",
+            postalCode: order.shippingPostalCode ?? "",
+            country: order.shippingCountry ?? "",
+          }
+        : undefined,
     items: items.map((item) => ({
       id: String(item.id),
       productId: String(item.productId),
@@ -374,11 +396,26 @@ shopV1Router.delete("/cart", requireAuth, async (req: any, res: any) => {
   }
 });
 
-shopV1Router.post("/orders", requireAuth, async (req: any, res: any) => {
+shopV1Router.post("/orders", requireAuth, validateBody(orderCreateSchema), async (req: any, res: any) => {
   const transaction = await sequelize.transaction();
 
   try {
     const userId = Number(req.auth.userId);
+    const addressId = Number(req.body?.addressId);
+    const address = await Address.findOne({
+      where: {
+        id: addressId,
+        userId,
+      },
+      transaction,
+      lock: transaction.LOCK.UPDATE,
+    });
+
+    if (!address) {
+      await transaction.rollback();
+      return res.status(404).json({ success: false, data: null, message: "Dirección no encontrada" });
+    }
+
     const cart = await getOrCreateActiveCart(userId, transaction);
 
     const cartItems = await CartItem.findAll({
@@ -419,12 +456,18 @@ shopV1Router.post("/orders", requireAuth, async (req: any, res: any) => {
       {
         userId,
         cartId: cart.id,
+        addressId: address.id,
         status: "pending",
         paymentStatus: "pending",
         subtotal,
         discountTotal: 0,
         shippingTotal: SHIPPING_COST,
         total: Number((subtotal + SHIPPING_COST).toFixed(2)),
+        shippingStreet: address.street,
+        shippingCity: address.city,
+        shippingState: address.state,
+        shippingPostalCode: address.postalCode,
+        shippingCountry: address.country,
       },
       { transaction },
     );
@@ -456,7 +499,10 @@ shopV1Router.post("/orders", requireAuth, async (req: any, res: any) => {
     await transaction.commit();
 
     const createdOrder = await Order.findByPk(order.id, {
-      include: [{ model: OrderItem, as: "items" }],
+      include: [
+        { model: OrderItem, as: "items" },
+        { model: Address, as: "address" },
+      ],
     });
 
     return res.status(201).json({
@@ -480,7 +526,10 @@ shopV1Router.get("/orders", requireAuth, async (req: any, res: any) => {
 
     const orders = await Order.findAll({
       where: { userId },
-      include: [{ model: OrderItem, as: "items" }],
+      include: [
+        { model: OrderItem, as: "items" },
+        { model: Address, as: "address" },
+      ],
       order: [["createdAt", "DESC"]],
     });
 

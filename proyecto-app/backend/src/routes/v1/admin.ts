@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  Address,
   Category,
   ContactMessage,
   Offer,
@@ -41,6 +42,7 @@ async function mapProductById(id: number) {
       { model: ProductImage, as: "images" },
       { model: ProductSize, as: "sizes" },
       { model: ProductColor, as: "colors" },
+      { model: ProductVariant, as: "variants" },
     ],
   });
 
@@ -71,6 +73,14 @@ async function mapProductById(id: number) {
       name: color.name,
       hex: color.hex,
       available: color.available,
+    })),
+    variants: ((product as any).variants ?? []).map((variant: ProductVariant) => ({
+      id: String(variant.id),
+      sizeName: variant.sizeName,
+      colorName: variant.colorName,
+      stock: variant.stock,
+      sku: variant.sku ?? undefined,
+      isActive: variant.isActive,
     })),
     stock: product.stock,
     featured: product.featured,
@@ -118,17 +128,38 @@ const mapContactMessage = (row: ContactMessage) => ({
 
 const mapAdminOrder = (order: Order & { items?: OrderItem[] }) => {
   const items = (order.get("items") as OrderItem[] | undefined) ?? [];
+  const address = order.get("address") as Address | undefined;
 
   return {
     id: String(order.id),
     userId: String(order.userId),
     cartId: String(order.cartId),
+    addressId: order.addressId == null ? undefined : String(order.addressId),
     status: order.status,
     paymentStatus: order.paymentStatus,
     subtotal: Number(order.subtotal),
     discountTotal: Number(order.discountTotal),
     shippingTotal: Number(order.shippingTotal),
     total: Number(order.total),
+    shippingAddress: address
+      ? {
+          id: String(address.id),
+          street: address.street,
+          city: address.city,
+          state: address.state,
+          postalCode: address.postalCode,
+          country: address.country,
+          isDefault: address.isDefault,
+        }
+      : order.shippingStreet
+        ? {
+            street: order.shippingStreet,
+            city: order.shippingCity ?? "",
+            state: order.shippingState ?? "",
+            postalCode: order.shippingPostalCode ?? "",
+            country: order.shippingCountry ?? "",
+          }
+        : undefined,
     items: items.map((item) => ({
       id: String(item.id),
       productId: String(item.productId),
@@ -505,7 +536,7 @@ adminV1Router.delete("/admin/offers/:id", requireAuth, requireAdmin, async (req:
 
 adminV1Router.post("/admin/products", requireAuth, requireAdmin, async (req: any, res: any) => {
   try {
-    const { name, description, price, originalPrice, categorySlug, stock, featured, isNew, images } = req.body ?? {};
+    const { name, description, price, originalPrice, categorySlug, stock, featured, isNew, images, variants } = req.body ?? {};
 
     if (!name || price === undefined || !categorySlug) {
       return res.status(400).json({ success: false, data: null, message: "Nombre, precio y categoría son requeridos" });
@@ -542,43 +573,97 @@ adminV1Router.post("/admin/products", requireAuth, requireAdmin, async (req: any
       })),
     );
 
-    await ProductSize.bulkCreate(
-      ["S", "M", "L"].map((size) => ({
-        productId: product.id,
-        name: size,
-        available: true,
-      })),
-    );
+    const normalizedVariants = Array.isArray(variants) ? variants : [];
+    let nextStock = Number(stock ?? 0);
 
-    await ProductColor.bulkCreate([
-      { productId: product.id, name: "Negro", hex: "#1a1a1a", available: true },
-      { productId: product.id, name: "Blanco", hex: "#ffffff", available: true },
-    ]);
+    if (normalizedVariants.length > 0) {
+      const sizeNames = new Set<string>();
+      const colorNames = new Set<string>();
 
-    const defaultSizes = ["S", "M", "L"];
-    const defaultColors = ["Negro", "Blanco"];
-    const combinations = defaultSizes.flatMap((sizeName) =>
-      defaultColors.map((colorName) => ({ sizeName, colorName })),
-    );
+      const variantRows = normalizedVariants.map((variant: any) => {
+        const sizeName = String(variant.sizeName ?? "").trim();
+        const colorName = String(variant.colorName ?? "").trim();
+        const variantStock = Math.max(0, Number(variant.stock ?? 0));
 
-    const totalStock = Number(stock ?? 0);
-    const baseStock = Math.floor(totalStock / combinations.length);
-    let remainder = totalStock % combinations.length;
+        if (!sizeName || !colorName) {
+          throw new Error("Cada variante requiere sizeName y colorName");
+        }
 
-    await ProductVariant.bulkCreate(
-      combinations.map((combination) => {
-        const extra = remainder > 0 ? 1 : 0;
-        remainder = Math.max(0, remainder - 1);
+        sizeNames.add(sizeName);
+        colorNames.add(colorName);
 
         return {
           productId: product.id,
-          sizeName: combination.sizeName,
-          colorName: combination.colorName,
-          stock: baseStock + extra,
-          isActive: true,
+          sizeName,
+          colorName,
+          stock: variantStock,
+          sku: variant.sku ? String(variant.sku).trim() : null,
+          isActive: variant.isActive === undefined ? true : Boolean(variant.isActive),
         };
-      }),
-    );
+      });
+
+      await ProductSize.bulkCreate(
+        Array.from(sizeNames).map((sizeName) => ({
+          productId: product.id,
+          name: sizeName,
+          available: true,
+        })),
+      );
+
+      await ProductColor.bulkCreate(
+        Array.from(colorNames).map((colorName, index) => ({
+          productId: product.id,
+          name: colorName,
+          hex: index === 0 ? "#1a1a1a" : "#ffffff",
+          available: true,
+        })),
+      );
+
+      await ProductVariant.bulkCreate(variantRows);
+      nextStock = variantRows.reduce((sum, variantRow) => sum + Number(variantRow.stock), 0);
+    } else {
+      await ProductSize.bulkCreate(
+        ["S", "M", "L"].map((size) => ({
+          productId: product.id,
+          name: size,
+          available: true,
+        })),
+      );
+
+      await ProductColor.bulkCreate([
+        { productId: product.id, name: "Negro", hex: "#1a1a1a", available: true },
+        { productId: product.id, name: "Blanco", hex: "#ffffff", available: true },
+      ]);
+
+      const defaultSizes = ["S", "M", "L"];
+      const defaultColors = ["Negro", "Blanco"];
+      const combinations = defaultSizes.flatMap((sizeName) =>
+        defaultColors.map((colorName) => ({ sizeName, colorName })),
+      );
+
+      const totalStock = Number(stock ?? 0);
+      const baseStock = Math.floor(totalStock / combinations.length);
+      let remainder = totalStock % combinations.length;
+
+      await ProductVariant.bulkCreate(
+        combinations.map((combination) => {
+          const extra = remainder > 0 ? 1 : 0;
+          remainder = Math.max(0, remainder - 1);
+
+          return {
+            productId: product.id,
+            sizeName: combination.sizeName,
+            colorName: combination.colorName,
+            stock: baseStock + extra,
+            isActive: true,
+          };
+        }),
+      );
+
+      nextStock = totalStock;
+    }
+
+    await product.update({ stock: nextStock });
 
     const mapped = await mapProductById(product.id);
     return res.status(201).json({ success: true, data: mapped, message: "Producto creado exitosamente" });
@@ -598,8 +683,7 @@ adminV1Router.patch("/admin/products/:id", requireAuth, requireAdmin, async (req
     if (!product) {
       return res.status(404).json({ success: false, data: null, message: "Producto no encontrado" });
     }
-
-    const { name, description, price, originalPrice, categorySlug, stock, featured, isNew } = req.body ?? {};
+    const { name, description, price, originalPrice, categorySlug, stock, featured, isNew, variants } = req.body ?? {};
 
     let categoryId = product.categoryId;
     if (categorySlug) {
@@ -610,15 +694,109 @@ adminV1Router.patch("/admin/products/:id", requireAuth, requireAdmin, async (req
       categoryId = category.id;
     }
 
+    await ProductVariant.destroy({ where: { productId: product.id } });
+    await ProductSize.destroy({ where: { productId: product.id } });
+    await ProductColor.destroy({ where: { productId: product.id } });
+
+    const normalizedVariants = Array.isArray(variants) ? variants : [];
+    let nextStock = Number(stock ?? product.stock ?? 0);
+
+    if (normalizedVariants.length > 0) {
+      const sizeNames = new Set<string>();
+      const colorNames = new Set<string>();
+
+      const variantRows = normalizedVariants.map((variant: any) => {
+        const sizeName = String(variant.sizeName ?? "").trim();
+        const colorName = String(variant.colorName ?? "").trim();
+        const variantStock = Math.max(0, Number(variant.stock ?? 0));
+
+        if (!sizeName || !colorName) {
+          throw new Error("Cada variante requiere sizeName y colorName");
+        }
+
+        sizeNames.add(sizeName);
+        colorNames.add(colorName);
+
+        return {
+          productId: product.id,
+          sizeName,
+          colorName,
+          stock: variantStock,
+          sku: variant.sku ? String(variant.sku).trim() : null,
+          isActive: variant.isActive === undefined ? true : Boolean(variant.isActive),
+        };
+      });
+
+      await ProductSize.bulkCreate(
+        Array.from(sizeNames).map((sizeName) => ({
+          productId: product.id,
+          name: sizeName,
+          available: true,
+        })),
+      );
+
+      await ProductColor.bulkCreate(
+        Array.from(colorNames).map((colorName, index) => ({
+          productId: product.id,
+          name: colorName,
+          hex: index === 0 ? "#1a1a1a" : "#ffffff",
+          available: true,
+        })),
+      );
+
+      await ProductVariant.bulkCreate(variantRows);
+      nextStock = variantRows.reduce((sum, variantRow) => sum + Number(variantRow.stock), 0);
+    } else {
+      const defaultSizes = ["S", "M", "L"];
+      const defaultColors = ["Negro", "Blanco"];
+      const combinations = defaultSizes.flatMap((sizeName) =>
+        defaultColors.map((colorName) => ({ sizeName, colorName })),
+      );
+
+      const totalStock = Number(stock ?? product.stock ?? 0);
+      const baseStock = Math.floor(totalStock / combinations.length);
+      let remainder = totalStock % combinations.length;
+
+      await ProductSize.bulkCreate(
+        defaultSizes.map((size) => ({
+          productId: product.id,
+          name: size,
+          available: true,
+        })),
+      );
+
+      await ProductColor.bulkCreate([
+        { productId: product.id, name: "Negro", hex: "#1a1a1a", available: true },
+        { productId: product.id, name: "Blanco", hex: "#ffffff", available: true },
+      ]);
+
+      await ProductVariant.bulkCreate(
+        combinations.map((combination) => {
+          const extra = remainder > 0 ? 1 : 0;
+          remainder = Math.max(0, remainder - 1);
+
+          return {
+            productId: product.id,
+            sizeName: combination.sizeName,
+            colorName: combination.colorName,
+            stock: baseStock + extra,
+            isActive: true,
+          };
+        }),
+      );
+
+      nextStock = totalStock;
+    }
+
     await product.update({
       ...(name ? { name: String(name), slug: slugify(String(name)) } : {}),
       ...(description !== undefined ? { description: String(description) } : {}),
       ...(price !== undefined ? { price: Number(price) } : {}),
       ...(originalPrice !== undefined ? { originalPrice: originalPrice ? Number(originalPrice) : null } : {}),
-      ...(stock !== undefined ? { stock: Number(stock) } : {}),
       ...(featured !== undefined ? { featured: Boolean(featured) } : {}),
       ...(isNew !== undefined ? { isNew: Boolean(isNew) } : {}),
       categoryId,
+      stock: nextStock,
     });
 
     const mapped = await mapProductById(product.id);
@@ -702,7 +880,10 @@ adminV1Router.patch(
 adminV1Router.get("/admin/orders", requireAuth, requireAdmin, async (_req: any, res: any) => {
   try {
     const rows = await Order.findAll({
-      include: [{ model: OrderItem, as: "items" }],
+      include: [
+        { model: OrderItem, as: "items" },
+        { model: Address, as: "address" },
+      ],
       order: [["createdAt", "DESC"]],
     });
 
@@ -730,7 +911,12 @@ adminV1Router.patch(
     const id = Number(req.params.id);
     const status = String(req.body?.status ?? "").trim();
 
-    const row = await Order.findByPk(id, { include: [{ model: OrderItem, as: "items" }] });
+    const row = await Order.findByPk(id, {
+      include: [
+        { model: OrderItem, as: "items" },
+        { model: Address, as: "address" },
+      ],
+    });
     if (!row) {
       return res.status(404).json({ success: false, data: null, message: "Pedido no encontrado" });
     }

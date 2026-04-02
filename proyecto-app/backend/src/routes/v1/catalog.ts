@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { Op } from "sequelize";
-import { Category, Offer, Product, ProductColor, ProductImage, ProductSize } from "../../db/models";
+import { Category, Offer, Product, ProductColor, ProductImage, ProductSize, ProductVariant } from "../../db/models";
 import { validateQuery } from "../../middleware/validate";
 import { offersAllQuerySchema, productListQuerySchema } from "../../validation/schemas";
 
@@ -33,6 +33,7 @@ const mapProduct = (product: Product & {
   images?: ProductImage[];
   sizes?: ProductSize[];
   colors?: ProductColor[];
+  variants?: ProductVariant[];
 }) => ({
   id: String(product.id),
   name: product.name,
@@ -61,6 +62,14 @@ const mapProduct = (product: Product & {
     name: color.name,
     hex: color.hex,
     available: color.available,
+  })),
+  variants: (product.variants ?? []).map((variant) => ({
+    id: String(variant.id),
+    sizeName: variant.sizeName,
+    colorName: variant.colorName,
+    stock: variant.stock,
+    sku: variant.sku ?? undefined,
+    isActive: variant.isActive,
   })),
   stock: product.stock,
   featured: product.featured,
@@ -162,6 +171,11 @@ catalogV1Router.get("/products", validateQuery(productListQuerySchema), async (r
               }
             : {}),
         },
+        {
+          model: ProductVariant,
+          as: "variants",
+          required: false,
+        },
       ],
       offset: (page - 1) * pageSize,
       limit: pageSize,
@@ -224,6 +238,7 @@ catalogV1Router.get("/products/featured", async (_req: any, res: any) => {
         { model: ProductImage, as: "images" },
         { model: ProductSize, as: "sizes" },
         { model: ProductColor, as: "colors" },
+        { model: ProductVariant, as: "variants" },
       ],
       order: [["createdAt", "DESC"]],
       limit: 8,
@@ -254,6 +269,7 @@ catalogV1Router.get("/products/new-arrivals", async (_req: any, res: any) => {
         { model: ProductImage, as: "images" },
         { model: ProductSize, as: "sizes" },
         { model: ProductColor, as: "colors" },
+        { model: ProductVariant, as: "variants" },
       ],
       order: [["createdAt", "DESC"]],
       limit: 8,
@@ -284,6 +300,7 @@ catalogV1Router.get("/products/:slug", async (req: any, res: any) => {
         { model: ProductImage, as: "images" },
         { model: ProductSize, as: "sizes" },
         { model: ProductColor, as: "colors" },
+        { model: ProductVariant, as: "variants" },
       ],
     });
 
