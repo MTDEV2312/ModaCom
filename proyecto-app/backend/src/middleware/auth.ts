@@ -7,11 +7,29 @@ export interface AuthPayload {
   email: string;
 }
 
-export function signAuthToken(payload: AuthPayload) {
+export interface RefreshPayload {
+  userId: number;
+  tokenId: string;
+}
+
+export function signAccessToken(payload: AuthPayload) {
   return jwt.sign(payload, env.jwtSecret, {
     expiresIn: env.jwtExpiresIn,
   });
 }
+
+export function signRefreshToken(payload: RefreshPayload) {
+  return jwt.sign(payload, env.jwtSecret, {
+    expiresIn: env.jwtRefreshExpiresIn,
+  });
+}
+
+export function verifyRefreshToken(token: string) {
+  return jwt.verify(token, env.jwtSecret) as RefreshPayload;
+}
+
+// Backward compatibility for existing callers.
+export const signAuthToken = signAccessToken;
 
 export function requireAuth(req: any, res: any, next: any) {
   const authorization = req.headers.authorization;
