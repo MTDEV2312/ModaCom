@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Category, Offer, OfferCategory, Product, ProductColor, ProductImage, ProductSize } from "../../db/models";
+import { Category, ContactMessage, Offer, OfferCategory, Order, OrderItem, Product, ProductColor, ProductImage, ProductSize } from "../../db/models";
 import { requireAdmin, requireAuth } from "../../middleware/auth";
 
 export const adminV1Router = Router();
@@ -89,6 +89,46 @@ const mapOffer = (offer: Offer & { categories?: Category[] }) => ({
   active: offer.active,
   applicableCategories: (offer.get("categories") as Category[] | undefined)?.map((category) => category.slug) ?? [],
 });
+
+const mapContactMessage = (row: ContactMessage) => ({
+  id: String(row.id),
+  name: row.name,
+  email: row.email,
+  phone: row.phone ?? undefined,
+  subject: row.subject,
+  message: row.message,
+  status: row.status,
+  createdAt: row.createdAt.toISOString(),
+  updatedAt: row.updatedAt.toISOString(),
+});
+
+const mapAdminOrder = (order: Order & { items?: OrderItem[] }) => {
+  const items = (order.get("items") as OrderItem[] | undefined) ?? [];
+
+  return {
+    id: String(order.id),
+    userId: String(order.userId),
+    cartId: String(order.cartId),
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    subtotal: Number(order.subtotal),
+    discountTotal: Number(order.discountTotal),
+    shippingTotal: Number(order.shippingTotal),
+    total: Number(order.total),
+    items: items.map((item) => ({
+      id: String(item.id),
+      productId: String(item.productId),
+      productName: item.productName,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+      sizeName: item.sizeName ?? undefined,
+      colorName: item.colorName ?? undefined,
+      subtotal: Number((Number(item.unitPrice) * item.quantity).toFixed(2)),
+    })),
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+  };
+};
 
 adminV1Router.get("/admin/categories", requireAuth, requireAdmin, async (_req: any, res: any) => {
   try {
@@ -566,5 +606,120 @@ adminV1Router.delete("/admin/products/:id", requireAuth, requireAdmin, async (re
     return res.status(200).json({ success: true, data: null, message: "Producto eliminado exitosamente" });
   } catch (error) {
     return res.status(500).json({ success: false, data: null, message: error instanceof Error ? error.message : "Error al eliminar producto" });
+  }
+});
+
+adminV1Router.get("/admin/contact-messages", requireAuth, requireAdmin, async (_req: any, res: any) => {
+  try {
+    const rows = await ContactMessage.findAll({
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: rows.map((row) => mapContactMessage(row)),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      data: [],
+      message: error instanceof Error ? error.message : "Error al listar mensajes de contacto",
+    });
+  }
+});
+
+adminV1Router.patch("/admin/contact-messages/:id/status", requireAuth, requireAdmin, async (req: any, res: any) => {
+  try {
+    const id = Number(req.params.id);
+    const status = String(req.body?.status ?? "").trim();
+
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ success: false, data: null, message: "ID inválido" });
+    }
+
+    if (!["new", "in_progress", "resolved"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        message: "Estado inválido. Valores permitidos: new, in_progress, resolved",
+      });
+    }
+
+    const row = await ContactMessage.findByPk(id);
+    if (!row) {
+      return res.status(404).json({ success: false, data: null, message: "Mensaje no encontrado" });
+    }
+
+    await row.update({ status: status as "new" | "in_progress" | "resolved" });
+
+    return res.status(200).json({
+      success: true,
+      data: mapContactMessage(row),
+      message: "Estado actualizado exitosamente",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      data: null,
+      message: error instanceof Error ? error.message : "Error actualizando estado de mensaje",
+    });
+  }
+});
+
+adminV1Router.get("/admin/orders", requireAuth, requireAdmin, async (_req: any, res: any) => {
+  try {
+    const rows = await Order.findAll({
+      include: [{ model: OrderItem, as: "items" }],
+      order: [["createdAt", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: rows.map((row) => mapAdminOrder(row as Order & { items?: OrderItem[] })),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      data: [],
+      message: error instanceof Error ? error.message : "Error al listar pedidos",
+    });
+  }
+});
+
+adminV1Router.patch("/admin/orders/:id/status", requireAuth, requireAdmin, async (req: any, res: any) => {
+  try {
+    const id = Number(req.params.id);
+    const status = String(req.body?.status ?? "").trim();
+
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ success: false, data: null, message: "ID inválido" });
+    }
+
+    if (!["pending", "confirmed", "cancelled"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        message: "Estado inválido. Valores permitidos: pending, confirmed, cancelled",
+      });
+    }
+
+    const row = await Order.findByPk(id, { include: [{ model: OrderItem, as: "items" }] });
+    if (!row) {
+      return res.status(404).json({ success: false, data: null, message: "Pedido no encontrado" });
+    }
+
+    await row.update({ status: status as "pending" | "confirmed" | "cancelled" });
+
+    return res.status(200).json({
+      success: true,
+      data: mapAdminOrder(row as Order & { items?: OrderItem[] }),
+      message: "Estado de pedido actualizado exitosamente",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      data: null,
+      message: error instanceof Error ? error.message : "Error actualizando estado del pedido",
+    });
   }
 });
