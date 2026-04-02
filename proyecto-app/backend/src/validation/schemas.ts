@@ -131,3 +131,29 @@ export const adminContactStatusSchema = z.object({
 export const adminOrderStatusSchema = z.object({
   status: z.enum(["pending", "confirmed", "cancelled"]),
 });
+
+export const addressIdParamSchema = z.object({
+  id: toRequiredInt,
+});
+
+export const addressCreateSchema = z.object({
+  street: z.string().trim().min(1, "street requerido"),
+  city: z.string().trim().min(1, "city requerido"),
+  state: z.string().trim().min(1, "state requerido"),
+  postalCode: z.string().trim().min(1, "postalCode requerido"),
+  country: z.string().trim().min(1, "country requerido"),
+  isDefault: z.boolean().optional(),
+});
+
+export const addressUpdateSchema = z.object({
+  street: z.string().trim().min(1).optional(),
+  city: z.string().trim().min(1).optional(),
+  state: z.string().trim().min(1).optional(),
+  postalCode: z.string().trim().min(1).optional(),
+  country: z.string().trim().min(1).optional(),
+  isDefault: z.boolean().optional(),
+});
+
+export const orderCreateSchema = z.object({
+  addressId: toRequiredInt,
+});
