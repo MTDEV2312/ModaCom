@@ -7,4 +7,5 @@ export const env = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   jwtSecret: process.env.JWT_SECRET ?? "dev-jwt-secret-change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "1d",
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "14d",
 };
