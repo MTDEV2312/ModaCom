@@ -8,12 +8,18 @@ interface OrderAttributes {
   id: number;
   userId: number;
   cartId: number;
+  addressId?: number | null;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   subtotal: number;
   discountTotal: number;
   shippingTotal: number;
   total: number;
+  shippingStreet?: string | null;
+  shippingCity?: string | null;
+  shippingState?: string | null;
+  shippingPostalCode?: string | null;
+  shippingCountry?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -21,19 +27,37 @@ interface OrderAttributes {
 interface OrderCreationAttributes
   extends Optional<
     OrderAttributes,
-    "id" | "status" | "paymentStatus" | "discountTotal" | "shippingTotal" | "createdAt" | "updatedAt"
+    | "id"
+    | "addressId"
+    | "status"
+    | "paymentStatus"
+    | "discountTotal"
+    | "shippingTotal"
+    | "shippingStreet"
+    | "shippingCity"
+    | "shippingState"
+    | "shippingPostalCode"
+    | "shippingCountry"
+    | "createdAt"
+    | "updatedAt"
   > {}
 
 class Order extends Model<OrderAttributes, OrderCreationAttributes> implements OrderAttributes {
   public id!: number;
   public userId!: number;
   public cartId!: number;
+  public addressId?: number | null;
   public status!: OrderStatus;
   public paymentStatus!: PaymentStatus;
   public subtotal!: number;
   public discountTotal!: number;
   public shippingTotal!: number;
   public total!: number;
+  public shippingStreet?: string | null;
+  public shippingCity?: string | null;
+  public shippingState?: string | null;
+  public shippingPostalCode?: string | null;
+  public shippingCountry?: string | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -65,6 +89,16 @@ Order.init(
       onDelete: "RESTRICT",
       onUpdate: "CASCADE",
     },
+    addressId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      references: {
+        model: "addresses",
+        key: "id",
+      },
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE",
+    },
     status: {
       type: DataTypes.ENUM("pending", "confirmed", "cancelled"),
       allowNull: false,
@@ -92,6 +126,26 @@ Order.init(
     total: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
+    },
+    shippingStreet: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    shippingCity: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    shippingState: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    shippingPostalCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    shippingCountry: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {

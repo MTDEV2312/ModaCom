@@ -1,6 +1,7 @@
 import { Category } from "./Category";
 import { Cart } from "./Cart";
 import { CartItem } from "./CartItem";
+import { Address } from "./Address";
 import { Offer } from "./Offer";
 import { OfferCategory } from "./OfferCategory";
 import { ContactMessage } from "./ContactMessage";
@@ -53,6 +54,9 @@ export function initModelAssociations() {
   User.hasMany(Cart, { foreignKey: "userId", as: "carts" });
   Cart.belongsTo(User, { foreignKey: "userId", as: "user" });
 
+  User.hasMany(Address, { foreignKey: "userId", as: "addresses" });
+  Address.belongsTo(User, { foreignKey: "userId", as: "user" });
+
   Cart.hasMany(CartItem, { foreignKey: "cartId", as: "items" });
   CartItem.belongsTo(Cart, { foreignKey: "cartId", as: "cart" });
 
@@ -64,6 +68,9 @@ export function initModelAssociations() {
 
   User.hasMany(Order, { foreignKey: "userId", as: "orders" });
   Order.belongsTo(User, { foreignKey: "userId", as: "user" });
+
+  Address.hasMany(Order, { foreignKey: "addressId", as: "orders" });
+  Order.belongsTo(Address, { foreignKey: "addressId", as: "address" });
 
   User.hasMany(RefreshToken, { foreignKey: "userId", as: "refreshTokens" });
   RefreshToken.belongsTo(User, { foreignKey: "userId", as: "user" });
@@ -86,6 +93,7 @@ export function initModelAssociations() {
 export {
   Cart,
   CartItem,
+  Address,
   Category,
   ContactMessage,
   Offer,
