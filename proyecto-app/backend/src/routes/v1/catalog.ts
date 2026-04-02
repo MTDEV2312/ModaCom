@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { Op } from "sequelize";
 import { Category, Offer, Product, ProductColor, ProductImage, ProductSize } from "../../db/models";
+import { validateQuery } from "../../middleware/validate";
+import { offersAllQuerySchema, productListQuerySchema } from "../../validation/schemas";
 
 export const catalogV1Router = Router();
 
@@ -93,7 +95,7 @@ catalogV1Router.get("/categories", async (_req: any, res: any) => {
   }
 });
 
-catalogV1Router.get("/products", async (req: any, res: any) => {
+catalogV1Router.get("/products", validateQuery(productListQuerySchema), async (req: any, res: any) => {
   try {
     const page = Math.max(1, toNumber(req.query.page) ?? 1);
     const pageSize = Math.max(1, Math.min(100, toNumber(req.query.pageSize) ?? 12));
@@ -345,6 +347,46 @@ catalogV1Router.get("/offers", async (_req: any, res: any) => {
       success: false,
       data: [],
       message: error instanceof Error ? error.message : "Error cargando ofertas",
+    });
+  }
+});
+
+catalogV1Router.get("/offers/all", validateQuery(offersAllQuerySchema), async (req: any, res: any) => {
+  try {
+    const includeInactive = Boolean(req.query.includeInactive);
+    const offers = await Offer.findAll({
+      where: includeInactive ? undefined : { active: true },
+      include: [
+        {
+          model: Category,
+          as: "categories",
+          through: { attributes: [] },
+        },
+      ],
+      order: [["validUntil", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: offers.map((offer) => ({
+        id: String(offer.id),
+        title: offer.title,
+        description: offer.description,
+        discountPercentage: offer.discountPercentage,
+        code: offer.code ?? undefined,
+        image: offer.image,
+        validFrom: offer.validFrom.toISOString(),
+        validUntil: offer.validUntil.toISOString(),
+        active: offer.active,
+        applicableCategories:
+          (offer.get("categories") as Category[] | undefined)?.map((category) => category.slug) ?? [],
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      data: [],
+      message: error instanceof Error ? error.message : "Error cargando todas las ofertas",
     });
   }
 });

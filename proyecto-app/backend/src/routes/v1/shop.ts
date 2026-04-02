@@ -1,12 +1,15 @@
 import { Router } from "express";
 import { Transaction } from "sequelize";
 import { sequelize } from "../../db/sequelize";
-import { Cart, CartItem, Category, Order, OrderItem, Product, ProductImage } from "../../db/models";
+import { Cart, CartItem, Category, Order, OrderItem, Product, ProductImage, ProductVariant } from "../../db/models";
 import { requireAuth } from "../../middleware/auth";
+import { validateBody, validateParams } from "../../middleware/validate";
+import { cartAddItemSchema, cartUpdateItemSchema, itemIdParamSchema } from "../../validation/schemas";
 
 export const shopV1Router = Router();
 
 type CartItemWithRelations = CartItem & {
+  variant?: ProductVariant;
   product?: Product & {
     category?: Category;
     images?: ProductImage[];
@@ -40,8 +43,9 @@ const mapCartItem = (item: CartItemWithRelations) => {
     quantity: item.quantity,
     unitPrice,
     subtotal: Number((unitPrice * item.quantity).toFixed(2)),
-    sizeName: item.sizeName ?? undefined,
-    colorName: item.colorName ?? undefined,
+    variantId: item.variantId == null ? undefined : String(item.variantId),
+    sizeName: item.variant?.sizeName ?? item.sizeName ?? undefined,
+    colorName: item.variant?.colorName ?? item.colorName ?? undefined,
     product: item.product
       ? {
           id: String(item.product.id),
@@ -98,6 +102,7 @@ function mapOrder(order: OrderWithItems) {
       productName: item.productName,
       quantity: item.quantity,
       unitPrice: Number(item.unitPrice),
+      variantId: item.variantId == null ? undefined : String(item.variantId),
       sizeName: item.sizeName ?? undefined,
       colorName: item.colorName ?? undefined,
       subtotal: Number((Number(item.unitPrice) * item.quantity).toFixed(2)),
@@ -124,6 +129,7 @@ shopV1Router.get("/cart", requireAuth, async (req: any, res: any) => {
             { model: ProductImage, as: "images", required: false },
           ],
         },
+        { model: ProductVariant, as: "variant", required: false },
       ],
       order: [["id", "ASC"]],
     });
@@ -141,13 +147,15 @@ shopV1Router.get("/cart", requireAuth, async (req: any, res: any) => {
   }
 });
 
-shopV1Router.post("/cart/items", requireAuth, async (req: any, res: any) => {
+shopV1Router.post("/cart/items", requireAuth, validateBody(cartAddItemSchema), async (req: any, res: any) => {
   try {
     const userId = Number(req.auth.userId);
     const { productId, quantity, sizeName, colorName } = req.body ?? {};
 
     const numericProductId = Number(productId);
     const requestedQty = Math.max(1, Number(quantity ?? 1));
+    const normalizedSizeName = String(sizeName);
+    const normalizedColorName = String(colorName);
 
     if (!Number.isFinite(numericProductId)) {
       return res.status(400).json({ success: false, data: null, message: "Producto inválido" });
@@ -158,23 +166,39 @@ shopV1Router.post("/cart/items", requireAuth, async (req: any, res: any) => {
       return res.status(404).json({ success: false, data: null, message: "Producto no encontrado" });
     }
 
+    const variant = await ProductVariant.findOne({
+      where: {
+        productId: numericProductId,
+        sizeName: normalizedSizeName,
+        colorName: normalizedColorName,
+        isActive: true,
+      },
+    });
+
+    if (!variant) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        message: "La combinación talle/color no existe para este producto",
+      });
+    }
+
     const cart = await getOrCreateActiveCart(userId);
 
     const existingItem = await CartItem.findOne({
       where: {
         cartId: cart.id,
         productId: numericProductId,
-        sizeName: sizeName ? String(sizeName) : null,
-        colorName: colorName ? String(colorName) : null,
+        variantId: variant.id,
       },
     });
 
     const nextQuantity = (existingItem?.quantity ?? 0) + requestedQty;
-    if (nextQuantity > product.stock) {
+    if (nextQuantity > variant.stock) {
       return res.status(409).json({
         success: false,
         data: null,
-        message: `Stock insuficiente. Disponible: ${product.stock}`,
+        message: `Stock insuficiente para la variante seleccionada. Disponible: ${variant.stock}`,
       });
     }
 
@@ -184,10 +208,11 @@ shopV1Router.post("/cart/items", requireAuth, async (req: any, res: any) => {
       await CartItem.create({
         cartId: cart.id,
         productId: numericProductId,
+        variantId: variant.id,
         quantity: requestedQty,
         unitPrice: Number(product.price),
-        sizeName: sizeName ? String(sizeName) : null,
-        colorName: colorName ? String(colorName) : null,
+        sizeName: normalizedSizeName,
+        colorName: normalizedColorName,
       });
     }
 
@@ -203,6 +228,7 @@ shopV1Router.post("/cart/items", requireAuth, async (req: any, res: any) => {
             { model: ProductImage, as: "images", required: false },
           ],
         },
+        { model: ProductVariant, as: "variant", required: false },
       ],
       order: [["id", "ASC"]],
     });
@@ -221,28 +247,32 @@ shopV1Router.post("/cart/items", requireAuth, async (req: any, res: any) => {
   }
 });
 
-shopV1Router.patch("/cart/items/:itemId", requireAuth, async (req: any, res: any) => {
+shopV1Router.patch(
+  "/cart/items/:itemId",
+  requireAuth,
+  validateParams(itemIdParamSchema),
+  validateBody(cartUpdateItemSchema),
+  async (req: any, res: any) => {
   try {
     const userId = Number(req.auth.userId);
     const itemId = Number(req.params.itemId);
     const quantity = Number(req.body?.quantity);
 
-    if (!Number.isFinite(itemId) || !Number.isFinite(quantity) || quantity < 1) {
-      return res.status(400).json({ success: false, data: null, message: "Datos inválidos" });
-    }
-
     const cart = await getOrCreateActiveCart(userId);
-    const item = await CartItem.findOne({ where: { id: itemId, cartId: cart.id } });
+    const item = await CartItem.findOne({
+      where: { id: itemId, cartId: cart.id },
+      include: [{ model: ProductVariant, as: "variant", required: false }],
+    });
     if (!item) {
       return res.status(404).json({ success: false, data: null, message: "Item no encontrado" });
     }
 
-    const product = await Product.findByPk(item.productId);
-    if (!product || quantity > product.stock) {
+    const variant = (item as CartItemWithRelations).variant;
+    if (!variant || quantity > variant.stock) {
       return res.status(409).json({
         success: false,
         data: null,
-        message: `Stock insuficiente. Disponible: ${product?.stock ?? 0}`,
+        message: `Stock insuficiente para la variante. Disponible: ${variant?.stock ?? 0}`,
       });
     }
 
@@ -260,6 +290,7 @@ shopV1Router.patch("/cart/items/:itemId", requireAuth, async (req: any, res: any
             { model: ProductImage, as: "images", required: false },
           ],
         },
+        { model: ProductVariant, as: "variant", required: false },
       ],
       order: [["id", "ASC"]],
     });
@@ -278,14 +309,10 @@ shopV1Router.patch("/cart/items/:itemId", requireAuth, async (req: any, res: any
   }
 });
 
-shopV1Router.delete("/cart/items/:itemId", requireAuth, async (req: any, res: any) => {
+shopV1Router.delete("/cart/items/:itemId", requireAuth, validateParams(itemIdParamSchema), async (req: any, res: any) => {
   try {
     const userId = Number(req.auth.userId);
     const itemId = Number(req.params.itemId);
-
-    if (!Number.isFinite(itemId)) {
-      return res.status(400).json({ success: false, data: null, message: "Item inválido" });
-    }
 
     const cart = await getOrCreateActiveCart(userId);
     const item = await CartItem.findOne({ where: { id: itemId, cartId: cart.id } });
@@ -307,6 +334,7 @@ shopV1Router.delete("/cart/items/:itemId", requireAuth, async (req: any, res: an
             { model: ProductImage, as: "images", required: false },
           ],
         },
+        { model: ProductVariant, as: "variant", required: false },
       ],
       order: [["id", "ASC"]],
     });
@@ -355,7 +383,10 @@ shopV1Router.post("/orders", requireAuth, async (req: any, res: any) => {
 
     const cartItems = await CartItem.findAll({
       where: { cartId: cart.id },
-      include: [{ model: Product, as: "product", required: true }],
+      include: [
+        { model: Product, as: "product", required: true },
+        { model: ProductVariant, as: "variant", required: false },
+      ],
       transaction,
       lock: transaction.LOCK.UPDATE,
     });
@@ -367,12 +398,13 @@ shopV1Router.post("/orders", requireAuth, async (req: any, res: any) => {
 
     for (const item of cartItems as CartItemWithRelations[]) {
       const product = item.product;
-      if (!product || item.quantity > product.stock) {
+      const variant = item.variant;
+      if (!product || !variant || item.quantity > variant.stock) {
         await transaction.rollback();
         return res.status(409).json({
           success: false,
           data: null,
-          message: `Stock insuficiente para ${product?.name ?? "producto"}`,
+          message: `Stock insuficiente para ${product?.name ?? "producto"} (${variant?.sizeName ?? ""}/${variant?.colorName ?? ""})`,
         });
       }
     }
@@ -401,6 +433,7 @@ shopV1Router.post("/orders", requireAuth, async (req: any, res: any) => {
       (cartItems as CartItemWithRelations[]).map((item) => ({
         orderId: order.id,
         productId: item.productId,
+        variantId: item.variantId ?? null,
         productName: item.product?.name ?? "Producto",
         quantity: item.quantity,
         unitPrice: item.unitPrice,
@@ -411,8 +444,10 @@ shopV1Router.post("/orders", requireAuth, async (req: any, res: any) => {
     );
 
     for (const item of cartItems as CartItemWithRelations[]) {
-      if (!item.product) continue;
-      await item.product.update({ stock: item.product.stock - item.quantity }, { transaction });
+      if (!item.product || !item.variant) continue;
+
+      await item.variant.update({ stock: item.variant.stock - item.quantity }, { transaction });
+      await item.product.update({ stock: Math.max(0, item.product.stock - item.quantity) }, { transaction });
     }
 
     await cart.update({ status: "ordered" }, { transaction });

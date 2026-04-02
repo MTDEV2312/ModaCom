@@ -1,30 +1,16 @@
 import { Router } from "express";
 import { ContactMessage } from "../../db/models";
+import { validateBody } from "../../middleware/validate";
+import { contactCreateSchema } from "../../validation/schemas";
 
 export const contactV1Router = Router();
 
 const asEmail = (value: unknown) => String(value ?? "").trim().toLowerCase();
 
-contactV1Router.post("/contact/messages", async (req: any, res: any) => {
+contactV1Router.post("/contact/messages", validateBody(contactCreateSchema), async (req: any, res: any) => {
   try {
     const { name, email, phone, subject, message } = req.body ?? {};
-
-    if (!name || !email || !subject || !message) {
-      return res.status(400).json({
-        success: false,
-        data: null,
-        message: "Nombre, email, asunto y mensaje son requeridos",
-      });
-    }
-
     const normalizedEmail = asEmail(email);
-    if (!normalizedEmail.includes("@")) {
-      return res.status(400).json({
-        success: false,
-        data: null,
-        message: "Email inválido",
-      });
-    }
 
     const created = await ContactMessage.create({
       name: String(name).trim(),

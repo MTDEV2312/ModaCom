@@ -1,6 +1,20 @@
 import { Router } from "express";
-import { Category, ContactMessage, Offer, OfferCategory, Order, OrderItem, Product, ProductColor, ProductImage, ProductSize } from "../../db/models";
+import {
+  Category,
+  ContactMessage,
+  Offer,
+  OfferCategory,
+  Order,
+  OrderItem,
+  Product,
+  ProductColor,
+  ProductImage,
+  ProductSize,
+  ProductVariant,
+} from "../../db/models";
 import { requireAdmin, requireAuth } from "../../middleware/auth";
+import { validateBody, validateParams } from "../../middleware/validate";
+import { adminContactStatusSchema, adminOrderStatusSchema, adminStatusIdParamSchema } from "../../validation/schemas";
 
 export const adminV1Router = Router();
 
@@ -541,6 +555,31 @@ adminV1Router.post("/admin/products", requireAuth, requireAdmin, async (req: any
       { productId: product.id, name: "Blanco", hex: "#ffffff", available: true },
     ]);
 
+    const defaultSizes = ["S", "M", "L"];
+    const defaultColors = ["Negro", "Blanco"];
+    const combinations = defaultSizes.flatMap((sizeName) =>
+      defaultColors.map((colorName) => ({ sizeName, colorName })),
+    );
+
+    const totalStock = Number(stock ?? 0);
+    const baseStock = Math.floor(totalStock / combinations.length);
+    let remainder = totalStock % combinations.length;
+
+    await ProductVariant.bulkCreate(
+      combinations.map((combination) => {
+        const extra = remainder > 0 ? 1 : 0;
+        remainder = Math.max(0, remainder - 1);
+
+        return {
+          productId: product.id,
+          sizeName: combination.sizeName,
+          colorName: combination.colorName,
+          stock: baseStock + extra,
+          isActive: true,
+        };
+      }),
+    );
+
     const mapped = await mapProductById(product.id);
     return res.status(201).json({ success: true, data: mapped, message: "Producto creado exitosamente" });
   } catch (error) {
@@ -628,22 +667,16 @@ adminV1Router.get("/admin/contact-messages", requireAuth, requireAdmin, async (_
   }
 });
 
-adminV1Router.patch("/admin/contact-messages/:id/status", requireAuth, requireAdmin, async (req: any, res: any) => {
+adminV1Router.patch(
+  "/admin/contact-messages/:id/status",
+  requireAuth,
+  requireAdmin,
+  validateParams(adminStatusIdParamSchema),
+  validateBody(adminContactStatusSchema),
+  async (req: any, res: any) => {
   try {
     const id = Number(req.params.id);
     const status = String(req.body?.status ?? "").trim();
-
-    if (!Number.isFinite(id)) {
-      return res.status(400).json({ success: false, data: null, message: "ID inválido" });
-    }
-
-    if (!["new", "in_progress", "resolved"].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        data: null,
-        message: "Estado inválido. Valores permitidos: new, in_progress, resolved",
-      });
-    }
 
     const row = await ContactMessage.findByPk(id);
     if (!row) {
@@ -686,22 +719,16 @@ adminV1Router.get("/admin/orders", requireAuth, requireAdmin, async (_req: any, 
   }
 });
 
-adminV1Router.patch("/admin/orders/:id/status", requireAuth, requireAdmin, async (req: any, res: any) => {
+adminV1Router.patch(
+  "/admin/orders/:id/status",
+  requireAuth,
+  requireAdmin,
+  validateParams(adminStatusIdParamSchema),
+  validateBody(adminOrderStatusSchema),
+  async (req: any, res: any) => {
   try {
     const id = Number(req.params.id);
     const status = String(req.body?.status ?? "").trim();
-
-    if (!Number.isFinite(id)) {
-      return res.status(400).json({ success: false, data: null, message: "ID inválido" });
-    }
-
-    if (!["pending", "confirmed", "cancelled"].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        data: null,
-        message: "Estado inválido. Valores permitidos: pending, confirmed, cancelled",
-      });
-    }
 
     const row = await Order.findByPk(id, { include: [{ model: OrderItem, as: "items" }] });
     if (!row) {

@@ -5,6 +5,15 @@ import { Op } from "sequelize";
 import { User } from "../../db/models/User";
 import { RefreshToken } from "../../db/models/RefreshToken";
 import { requireAuth, signAccessToken, signRefreshToken, verifyRefreshToken } from "../../middleware/auth";
+import { validateBody } from "../../middleware/validate";
+import {
+  authLoginSchema,
+  authLogoutSchema,
+  authRecoverSchema,
+  authRefreshSchema,
+  authRegisterSchema,
+  authResetSchema,
+} from "../../validation/schemas";
 
 export const authV1Router = Router();
 
@@ -47,29 +56,9 @@ async function issueSessionTokens(user: User) {
   return { accessToken, refreshToken };
 }
 
-authV1Router.post("/auth/register", async (req: any, res: any) => {
+authV1Router.post("/auth/register", validateBody(authRegisterSchema), async (req: any, res: any) => {
   try {
     const { email, password, confirmPassword, firstName, lastName, acceptTerms } = req.body ?? {};
-
-    if (!email || !password || !confirmPassword || !firstName || !lastName) {
-      return res.status(400).json({ success: false, data: null, message: "Faltan campos requeridos" });
-    }
-
-    if (!String(email).includes("@")) {
-      return res.status(400).json({ success: false, data: null, message: "Email inválido" });
-    }
-
-    if (String(password).length < 8) {
-      return res.status(400).json({ success: false, data: null, message: "La contraseña debe tener al menos 8 caracteres" });
-    }
-
-    if (password !== confirmPassword) {
-      return res.status(400).json({ success: false, data: null, message: "Las contraseñas no coinciden" });
-    }
-
-    if (!acceptTerms) {
-      return res.status(400).json({ success: false, data: null, message: "Debes aceptar los términos" });
-    }
 
     const existing = await User.findOne({ where: { email: String(email).toLowerCase() } });
     if (existing) {
@@ -101,13 +90,9 @@ authV1Router.post("/auth/register", async (req: any, res: any) => {
   }
 });
 
-authV1Router.post("/auth/login", async (req: any, res: any) => {
+authV1Router.post("/auth/login", validateBody(authLoginSchema), async (req: any, res: any) => {
   try {
     const { email, password } = req.body ?? {};
-
-    if (!email || !password) {
-      return res.status(400).json({ success: false, data: null, message: "Email y contraseña requeridos" });
-    }
 
     const user = await User.findOne({ where: { email: String(email).toLowerCase() } });
     if (!user) {
@@ -167,11 +152,8 @@ authV1Router.get("/auth/me", requireAuth, async (req: any, res: any) => {
   }
 });
 
-authV1Router.post("/auth/recover-password", async (req: any, res: any) => {
+authV1Router.post("/auth/recover-password", validateBody(authRecoverSchema), async (req: any, res: any) => {
   const { email } = req.body ?? {};
-  if (!email || !String(email).includes("@")) {
-    return res.status(400).json({ success: false, data: null, message: "Email inválido" });
-  }
 
   return res.status(200).json({
     success: true,
@@ -180,13 +162,9 @@ authV1Router.post("/auth/recover-password", async (req: any, res: any) => {
   });
 });
 
-authV1Router.post("/auth/refresh", async (req: any, res: any) => {
+authV1Router.post("/auth/refresh", validateBody(authRefreshSchema), async (req: any, res: any) => {
   try {
     const refreshToken = String(req.body?.refreshToken ?? "").trim();
-    if (!refreshToken) {
-      return res.status(400).json({ success: false, data: null, message: "refreshToken requerido" });
-    }
-
     const payload = verifyRefreshToken(refreshToken);
 
     const stored = await RefreshToken.findOne({
@@ -226,7 +204,7 @@ authV1Router.post("/auth/refresh", async (req: any, res: any) => {
   }
 });
 
-authV1Router.post("/auth/logout", async (req: any, res: any) => {
+authV1Router.post("/auth/logout", validateBody(authLogoutSchema), async (req: any, res: any) => {
   try {
     const refreshToken = String(req.body?.refreshToken ?? "").trim();
     if (!refreshToken) {
@@ -249,21 +227,9 @@ authV1Router.post("/auth/logout", async (req: any, res: any) => {
   }
 });
 
-authV1Router.post("/auth/reset-password", async (req: any, res: any) => {
+authV1Router.post("/auth/reset-password", validateBody(authResetSchema), async (req: any, res: any) => {
   try {
     const { email, password, confirmPassword } = req.body ?? {};
-
-    if (!email || !password || !confirmPassword) {
-      return res.status(400).json({ success: false, data: null, message: "Faltan campos requeridos" });
-    }
-
-    if (String(password).length < 8) {
-      return res.status(400).json({ success: false, data: null, message: "La contraseña debe tener al menos 8 caracteres" });
-    }
-
-    if (password !== confirmPassword) {
-      return res.status(400).json({ success: false, data: null, message: "Las contraseñas no coinciden" });
-    }
 
     const user = await User.findOne({ where: { email: String(email).toLowerCase() } });
     if (!user) {
