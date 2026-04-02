@@ -3,12 +3,14 @@ import { Cart } from "./Cart";
 import { CartItem } from "./CartItem";
 import { Offer } from "./Offer";
 import { OfferCategory } from "./OfferCategory";
+import { ContactMessage } from "./ContactMessage";
 import { Order } from "./Order";
 import { OrderItem } from "./OrderItem";
 import { Product } from "./Product";
 import { ProductColor } from "./ProductColor";
 import { ProductImage } from "./ProductImage";
 import { ProductSize } from "./ProductSize";
+import { RefreshToken } from "./RefreshToken";
 import { User } from "./User";
 
 let initialized = false;
@@ -56,6 +58,9 @@ export function initModelAssociations() {
   User.hasMany(Order, { foreignKey: "userId", as: "orders" });
   Order.belongsTo(User, { foreignKey: "userId", as: "user" });
 
+  User.hasMany(RefreshToken, { foreignKey: "userId", as: "refreshTokens" });
+  RefreshToken.belongsTo(User, { foreignKey: "userId", as: "user" });
+
   Cart.hasOne(Order, { foreignKey: "cartId", as: "order" });
   Order.belongsTo(Cart, { foreignKey: "cartId", as: "cart" });
 
@@ -72,6 +77,7 @@ export {
   Cart,
   CartItem,
   Category,
+  ContactMessage,
   Offer,
   OfferCategory,
   Order,
@@ -80,5 +86,6 @@ export {
   ProductColor,
   ProductImage,
   ProductSize,
+  RefreshToken,
   User,
 };
