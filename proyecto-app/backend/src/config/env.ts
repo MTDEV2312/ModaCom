@@ -8,4 +8,5 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET ?? "dev-jwt-secret-change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "1d",
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "14d",
+  passwordResetTokenExpiresIn: process.env.PASSWORD_RESET_TOKEN_EXPIRES_IN ?? "1h",
 };
