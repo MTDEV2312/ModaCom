@@ -2,6 +2,7 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { TestServer } from "./integration-helpers";
 import { loginAdmin, registerAndLoginCustomer, startTestServer, stopTestServer } from "./integration-helpers";
+import { setEmailSenderForTests } from "./services/email";
 
 let ctx: TestServer;
 
@@ -258,5 +259,51 @@ describe("Admin integration", () => {
     assert.ok(match);
     assert.equal(match?.requestedIp, "10.10.10.10");
     assert.equal(match?.requestedUserAgent, "ModaCom-Integration-Audit");
+  });
+
+  it("should persist providerMessageId in password reset audit events", async () => {
+    const customer = await registerAndLoginCustomer(ctx.baseUrl, "integration-admin-audit-msgid");
+    const providerMessageId = `test-msg-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+    setEmailSenderForTests(async () => ({ id: providerMessageId }));
+
+    try {
+      const recoverResponse = await fetch(`${ctx.baseUrl}/api/v1/auth/recover-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: customer.email,
+        }),
+      });
+
+      assert.equal(recoverResponse.status, 200);
+    } finally {
+      setEmailSenderForTests(null);
+    }
+
+    const adminToken = await loginAdmin(ctx.baseUrl);
+    const auditResponse = await fetch(`${ctx.baseUrl}/api/v1/admin/security/password-reset-events?page=1&pageSize=30&email=${encodeURIComponent(customer.email)}`, {
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+      },
+    });
+
+    assert.equal(auditResponse.status, 200);
+
+    const auditPayload = (await auditResponse.json()) as {
+      success: boolean;
+      data: Array<{
+        userEmail?: string;
+        providerMessageId?: string;
+      }>;
+    };
+
+    assert.equal(auditPayload.success, true);
+
+    const match = auditPayload.data.find((event) => event.userEmail === customer.email);
+    assert.ok(match);
+    assert.equal(match?.providerMessageId, providerMessageId);
   });
 });
