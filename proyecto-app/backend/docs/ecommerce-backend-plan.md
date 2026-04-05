@@ -218,6 +218,8 @@ Admin products (`web/app/admin/productos/page.tsx`):
 - Current progress: dedicated rate limits added for `/auth/recover-password` and `/auth/reset-password`.
 - Current progress: admin security endpoint available at `GET /api/v1/admin/security/password-reset-events`.
 - Current progress: Resend integrated for password recovery email delivery (`RESEND_API_KEY` + domain-based sender).
+- Current progress: provider message id is persisted in `password_reset_tokens.providerMessageId` and exposed in admin audit endpoint.
+- Current progress: integration coverage includes mocked email sender to validate provider message id persistence without external dependency.
 
 ## 8) Implementation Backlog (ordered)
 
