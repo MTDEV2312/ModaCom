@@ -12,6 +12,7 @@ import { ProductColor } from "./ProductColor";
 import { ProductImage } from "./ProductImage";
 import { ProductSize } from "./ProductSize";
 import { ProductVariant } from "./ProductVariant";
+import { PasswordResetToken } from "./PasswordResetToken";
 import { RefreshToken } from "./RefreshToken";
 import { User } from "./User";
 
@@ -75,6 +76,9 @@ export function initModelAssociations() {
   User.hasMany(RefreshToken, { foreignKey: "userId", as: "refreshTokens" });
   RefreshToken.belongsTo(User, { foreignKey: "userId", as: "user" });
 
+  User.hasMany(PasswordResetToken, { foreignKey: "userId", as: "passwordResetTokens" });
+  PasswordResetToken.belongsTo(User, { foreignKey: "userId", as: "user" });
+
   Cart.hasOne(Order, { foreignKey: "cartId", as: "order" });
   Order.belongsTo(Cart, { foreignKey: "cartId", as: "cart" });
 
@@ -105,6 +109,7 @@ export {
   ProductImage,
   ProductSize,
   ProductVariant,
+  PasswordResetToken,
   RefreshToken,
   User,
 };
