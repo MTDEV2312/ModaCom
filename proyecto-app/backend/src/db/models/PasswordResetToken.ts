@@ -7,6 +7,7 @@ interface PasswordResetTokenAttributes {
   tokenHash: string;
   expiresAt: Date;
   usedAt?: Date | null;
+  providerMessageId?: string | null;
   requestedIp?: string | null;
   requestedUserAgent?: string | null;
   usedIp?: string | null;
@@ -18,7 +19,7 @@ interface PasswordResetTokenAttributes {
 interface PasswordResetTokenCreationAttributes
   extends Optional<
     PasswordResetTokenAttributes,
-    "id" | "usedAt" | "requestedIp" | "requestedUserAgent" | "usedIp" | "usedUserAgent" | "createdAt" | "updatedAt"
+    "id" | "usedAt" | "providerMessageId" | "requestedIp" | "requestedUserAgent" | "usedIp" | "usedUserAgent" | "createdAt" | "updatedAt"
   > {}
 
 class PasswordResetToken
@@ -30,6 +31,7 @@ class PasswordResetToken
   public tokenHash!: string;
   public expiresAt!: Date;
   public usedAt?: Date | null;
+  public providerMessageId?: string | null;
   public requestedIp?: string | null;
   public requestedUserAgent?: string | null;
   public usedIp?: string | null;
@@ -66,6 +68,10 @@ PasswordResetToken.init(
     },
     usedAt: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    providerMessageId: {
+      type: DataTypes.STRING(191),
       allowNull: true,
     },
     requestedIp: {
