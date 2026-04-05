@@ -7,11 +7,13 @@ import {
   OfferCategory,
   Order,
   OrderItem,
+  PasswordResetToken,
   Product,
   ProductColor,
   ProductImage,
   ProductSize,
   ProductVariant,
+  User,
 } from "../../db/models";
 import { requireAdmin, requireAuth } from "../../middleware/auth";
 import { validateBody, validateParams } from "../../middleware/validate";
@@ -172,6 +174,31 @@ const mapAdminOrder = (order: Order & { items?: OrderItem[] }) => {
     })),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
+  };
+};
+
+type PasswordResetTokenWithUser = PasswordResetToken & {
+  user?: User;
+};
+
+const mapPasswordResetEvent = (event: PasswordResetTokenWithUser) => {
+  const now = Date.now();
+  const usedAt = event.usedAt ?? null;
+  const isExpired = !usedAt && event.expiresAt.getTime() <= now;
+
+  return {
+    id: String(event.id),
+    userId: String(event.userId),
+    userEmail: event.user?.email ?? undefined,
+    requestedIp: event.requestedIp ?? undefined,
+    requestedUserAgent: event.requestedUserAgent ?? undefined,
+    usedIp: event.usedIp ?? undefined,
+    usedUserAgent: event.usedUserAgent ?? undefined,
+    expiresAt: event.expiresAt.toISOString(),
+    usedAt: usedAt ? usedAt.toISOString() : undefined,
+    status: usedAt ? "used" : isExpired ? "expired" : "active",
+    createdAt: event.createdAt.toISOString(),
+    updatedAt: event.updatedAt.toISOString(),
   };
 };
 
@@ -933,6 +960,56 @@ adminV1Router.patch(
       success: false,
       data: null,
       message: error instanceof Error ? error.message : "Error actualizando estado del pedido",
+    });
+  }
+});
+
+adminV1Router.get("/admin/security/password-reset-events", requireAuth, requireAdmin, async (req: any, res: any) => {
+  try {
+    const page = Math.max(1, Number(req.query?.page ?? 1));
+    const pageSize = Math.max(1, Math.min(100, Number(req.query?.pageSize ?? 20)));
+    const email = typeof req.query?.email === "string" ? req.query.email.trim().toLowerCase() : "";
+
+    const where: any = {};
+    const include: any[] = [
+      {
+        model: User,
+        as: "user",
+        required: Boolean(email),
+        ...(email ? { where: { email } } : {}),
+      },
+    ];
+
+    const result = await PasswordResetToken.findAndCountAll({
+      where,
+      include,
+      offset: (page - 1) * pageSize,
+      limit: pageSize,
+      order: [["createdAt", "DESC"]],
+      distinct: true,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: result.rows.map((event) => mapPasswordResetEvent(event as PasswordResetTokenWithUser)),
+      pagination: {
+        page,
+        pageSize,
+        totalItems: result.count,
+        totalPages: Math.max(1, Math.ceil(result.count / pageSize)),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      data: [],
+      message: error instanceof Error ? error.message : "Error listando eventos de recuperación",
+      pagination: {
+        page: 1,
+        pageSize: 20,
+        totalItems: 0,
+        totalPages: 1,
+      },
     });
   }
 });
