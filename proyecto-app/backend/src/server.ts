@@ -4,12 +4,15 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env";
 import { bootstrapDatabase } from "./db/bootstrap";
+import { initModelAssociations } from "./db/models";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
 import { authRateLimit, contactRateLimit } from "./middleware/rate-limit";
 import { healthRouter } from "./routes/health";
 import { v1Router } from "./routes/v1";
 
-const app = express();
+initModelAssociations();
+
+export const app = express();
 
 app.use(helmet());
 app.use(
@@ -41,4 +44,8 @@ async function startServer() {
   }
 }
 
-void startServer();
+if (require.main === module) {
+  void startServer();
+}
+
+export { startServer };
