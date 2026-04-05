@@ -7,7 +7,11 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test:integration": "tsx --test src/*.integration.test.ts",
+    "test:integration": "tsx --test --test-concurrency=1 src/*.integration.test.ts",
+    "test:integration:auth": "tsx --test --test-concurrency=1 src/auth.integration.test.ts",
+    "test:integration:admin": "tsx --test --test-concurrency=1 src/admin.integration.test.ts",
+    "test:integration:shop": "tsx --test --test-concurrency=1 src/shop.integration.test.ts",
+    "test:integration:contact": "tsx --test --test-concurrency=1 src/contact.integration.test.ts",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:seed": "sequelize-cli db:seed:all"
