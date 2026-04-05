@@ -169,8 +169,11 @@ Admin products (`web/app/admin/productos/page.tsx`):
 - [x] Phase 3 - Auth + admin
 - [x] Phase 4 - Cart + checkout prep
 - [x] Phase 5 - Front integration
-- [~] Next focus: integration tests for core flows (backlog item 9)
-- [~] Integration tests status: smoke + auth flow (register/login/me) running in Docker
+- [x] Implementation backlog items 1-9 completed
+- [x] Integration tests status: smoke + auth + admin authz + cart->order + stock conflict (Docker)
+- [x] Integration tests status: auth lifecycle (refresh/logout/reset) + admin offers CRUD (Docker)
+- [x] Integration tests status: admin category business rules + contact message + contact rate limit (Docker)
+- [x] Integration tests organization: suites split by domain (`auth`, `admin`, `shop`, `contact`) + scripts per domain
 
 ### Phase 0 - Consolidation
 - Keep `backend/src` as single source backend.
@@ -200,21 +203,21 @@ Admin products (`web/app/admin/productos/page.tsx`):
 ### Phase 5 - Front integration
 - Replace `web/lib/services/*.ts` mock logic by HTTP calls to `/api/v1`.
 - Keep same function signatures to minimize UI churn.
-- Current progress: frontend services already use `/api/v1` when `NEXT_PUBLIC_API_URL` is present, with mock fallback.
+- Current progress: frontend services use `/api/v1` as source of truth with explicit API error responses (no mock fallback).
 - Current progress: checkout now resolves/sends `addressId` for `POST /api/v1/orders`.
 - Current progress: cart UI includes shipping-address selector and blocks checkout when no address is available.
 
 ## 8) Implementation Backlog (ordered)
 
-1. Create Sequelize migrations for ecommerce tables.
-2. Add model associations and repository layer.
-3. Add request validators and centralized error handler.
-4. Build products/categories/offers public controllers.
-5. Build auth module (register/login/me/recover/reset).
-6. Build admin module for CRUD.
-7. Build cart module.
-8. Integrate frontend services.
-9. Add integration tests for core flows.
+1. [x] Create Sequelize migrations for ecommerce tables.
+2. [x] Add model associations and repository layer.
+3. [x] Add request validators and centralized error handler.
+4. [x] Build products/categories/offers public controllers.
+5. [x] Build auth module (register/login/me/recover/reset).
+6. [x] Build admin module for CRUD.
+7. [x] Build cart module.
+8. [x] Integrate frontend services.
+9. [x] Add integration tests for core flows.
 
 ## 9) Compatibility Notes with frontend types
 
