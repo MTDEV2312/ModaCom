@@ -215,6 +215,9 @@ Admin products (`web/app/admin/productos/page.tsx`):
 - Current progress: implemented with dedicated `password_reset_tokens` table + integration coverage.
 - Current progress: added reset-token audit metadata (`requestedIp`, `requestedUserAgent`, `usedIp`, `usedUserAgent`).
 - Current progress: reset-token expiration is configurable via `PASSWORD_RESET_TOKEN_EXPIRES_IN`.
+- Current progress: dedicated rate limits added for `/auth/recover-password` and `/auth/reset-password`.
+- Current progress: admin security endpoint available at `GET /api/v1/admin/security/password-reset-events`.
+- Current progress: Resend integrated for password recovery email delivery (`RESEND_API_KEY` + domain-based sender).
 
 ## 8) Implementation Backlog (ordered)
 
