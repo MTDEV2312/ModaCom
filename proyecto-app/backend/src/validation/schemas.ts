@@ -48,7 +48,7 @@ export const authLogoutSchema = z.object({
 
 export const authResetSchema = z
   .object({
-    email,
+    token: z.string().trim().min(1, "token requerido"),
     password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
     confirmPassword: z.string(),
   })
