@@ -174,6 +174,7 @@ Admin products (`web/app/admin/productos/page.tsx`):
 - [x] Integration tests status: auth lifecycle (refresh/logout/reset) + admin offers CRUD (Docker)
 - [x] Integration tests status: admin category business rules + contact message + contact rate limit (Docker)
 - [x] Integration tests organization: suites split by domain (`auth`, `admin`, `shop`, `contact`) + scripts per domain
+- [x] Phase 6 - Backend hardening (password recovery with one-time expiring reset tokens)
 
 ### Phase 0 - Consolidation
 - Keep `backend/src` as single source backend.
@@ -206,6 +207,14 @@ Admin products (`web/app/admin/productos/page.tsx`):
 - Current progress: frontend services use `/api/v1` as source of truth with explicit API error responses (no mock fallback).
 - Current progress: checkout now resolves/sends `addressId` for `POST /api/v1/orders`.
 - Current progress: cart UI includes shipping-address selector and blocks checkout when no address is available.
+
+### Phase 6 - Backend hardening
+- Replace insecure reset-by-email flow with one-time expiring password reset tokens.
+- Invalidate active sessions after password reset.
+- Keep generic recovery response to prevent user enumeration.
+- Current progress: implemented with dedicated `password_reset_tokens` table + integration coverage.
+- Current progress: added reset-token audit metadata (`requestedIp`, `requestedUserAgent`, `usedIp`, `usedUserAgent`).
+- Current progress: reset-token expiration is configurable via `PASSWORD_RESET_TOKEN_EXPIRES_IN`.
 
 ## 8) Implementation Backlog (ordered)
 
