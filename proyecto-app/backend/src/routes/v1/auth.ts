@@ -7,6 +7,7 @@ import { Address } from "../../db/models/Address";
 import { RefreshToken } from "../../db/models/RefreshToken";
 import { PasswordResetToken } from "../../db/models/PasswordResetToken";
 import { env } from "../../config/env";
+import { isEmailDeliveryConfigured, sendPasswordResetEmail } from "../../services/email";
 import { requireAuth, signAccessToken, signRefreshToken, verifyRefreshToken } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
 import {
@@ -240,6 +241,19 @@ authV1Router.post("/auth/recover-password", validateBody(authRecoverSchema), asy
         requestedIp,
         requestedUserAgent,
       });
+
+      const emailResult = await sendPasswordResetEmail({
+        to: user.email,
+        resetToken: rawToken,
+      });
+
+      if (!emailResult.delivered && isEmailDeliveryConfigured()) {
+        console.error("Password reset email delivery failed", {
+          userId: user.id,
+          reason: emailResult.reason,
+          providerError: emailResult.reason === "provider-error" ? emailResult.providerError : undefined,
+        });
+      }
 
       // In development this allows end-to-end validation without email provider.
       if (env.nodeEnv !== "production") {
