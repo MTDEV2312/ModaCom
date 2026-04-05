@@ -2,7 +2,10 @@
 
 ## 1) Current State Analysis
 
-- The Next.js frontend is structurally complete but currently wired to mock services.
+- The backend in `backend/src` is fully functional and validated in Docker with integration suites (`auth`, `admin`, `shop`, `contact`).
+- Password recovery hardening is in production shape (one-time token, expiration, audit trail, dedicated rate limits, provider message id persistence).
+- API reference is documented in `backend/docs/api-reference.md`.
+- Pending operational/technical improvements are tracked in `backend/docs/backend-next-steps.md`.
 - Typed frontend contracts are defined in `web/types/index.ts` and should be treated as source of truth for API contracts.
 - Current backend in `backend/src` is not aligned to ecommerce domain (health + SSD resources).
 - A second legacy backend exists in `servidor/server.js`, also not aligned to full typed contracts.
@@ -175,6 +178,12 @@ Admin products (`web/app/admin/productos/page.tsx`):
 - [x] Integration tests status: admin category business rules + contact message + contact rate limit (Docker)
 - [x] Integration tests organization: suites split by domain (`auth`, `admin`, `shop`, `contact`) + scripts per domain
 - [x] Phase 6 - Backend hardening (password recovery with one-time expiring reset tokens)
+- [x] Email provider integration validated end-to-end (`recover-password` delivery confirmed)
+- [x] Reset email provider traceability (`providerMessageId`) persisted and exposed in admin audit
+- [x] API documentation generated (`backend/docs/api-reference.md`)
+- [x] OpenAPI contract generated (`backend/docs/openapi.json`)
+- [x] Interactive Swagger UI available at `GET /api/docs` (served by backend)
+- [x] API client assets ready for Postman/Insomnia (`backend/docs/postman-collection.json`, `backend/docs/postman-environment-local.json`, `backend/docs/api-clients-guide.md`)
 
 ### Phase 0 - Consolidation
 - Keep `backend/src` as single source backend.
@@ -240,15 +249,8 @@ Admin products (`web/app/admin/productos/page.tsx`):
 - Keep `category.slug` as exact union values: `hombre`, `mujer`, `ninos`.
 - Keep `sortBy` accepted values exactly: `price-asc`, `price-desc`, `newest`, `name`.
 
-## 10) Immediate Next Implementation Slice
+## 10) Post-Completion Notes
 
-Recommended first coding slice:
-- migrations + models for categories/products/offers + images + variants
-- endpoints:
-  - GET `/api/v1/categories`
-  - GET `/api/v1/products`
-  - GET `/api/v1/products/:slug`
-  - GET `/api/v1/offers`
-- update frontend services for those read endpoints only
-
-This enables real data in home, catalog, product detail, and promotions with minimal risk.
+- Backend core scope is completed and validated in Docker.
+- Functional API documentation is available in `backend/docs/api-reference.md`.
+- Follow-up improvements (CI docker-only, observability, security operations, and technical cleanup) are intentionally tracked in `backend/docs/backend-next-steps.md`.
