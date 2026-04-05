@@ -6,7 +6,7 @@ import { env } from "./config/env";
 import { bootstrapDatabase } from "./db/bootstrap";
 import { initModelAssociations } from "./db/models";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler";
-import { authRateLimit, contactRateLimit } from "./middleware/rate-limit";
+import { authRateLimit, authRecoverRateLimit, authResetRateLimit, contactRateLimit } from "./middleware/rate-limit";
 import { healthRouter } from "./routes/health";
 import { v1Router } from "./routes/v1";
 
@@ -23,6 +23,8 @@ app.use(
 app.use(morgan("dev"));
 app.use(express.json());
 
+app.use("/api/v1/auth/recover-password", authRecoverRateLimit);
+app.use("/api/v1/auth/reset-password", authResetRateLimit);
 app.use("/api/v1/auth", authRateLimit);
 app.use("/api/v1/contact/messages", contactRateLimit);
 
