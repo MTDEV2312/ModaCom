@@ -197,4 +197,69 @@ describe("Auth integration", () => {
 
     assert.equal(resetReuseResponse.status, 400);
   });
+
+  it("should enforce recover-password dedicated rate limit", async () => {
+    const email = `integration-recover-limit-${Date.now()}@example.com`;
+    const ipHeader = `integration-recover-limit-${Date.now()}`;
+
+    for (let index = 1; index <= 6; index += 1) {
+      const response = await fetch(`${ctx.baseUrl}/api/v1/auth/recover-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-forwarded-for": ipHeader,
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (index <= 5) {
+        assert.equal(response.status, 200);
+      } else {
+        assert.equal(response.status, 429);
+        const payload = (await response.json()) as {
+          success: boolean;
+          data: null;
+          message?: string;
+        };
+
+        assert.equal(payload.success, false);
+        assert.equal(payload.data, null);
+        assert.match(String(payload.message), /Demasiadas solicitudes de recuperación/);
+      }
+    }
+  });
+
+  it("should enforce reset-password dedicated rate limit", async () => {
+    const ipHeader = `integration-reset-limit-${Date.now()}`;
+
+    for (let index = 1; index <= 11; index += 1) {
+      const response = await fetch(`${ctx.baseUrl}/api/v1/auth/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-forwarded-for": ipHeader,
+        },
+        body: JSON.stringify({
+          token: "invalid-reset-token",
+          password: "password123",
+          confirmPassword: "password123",
+        }),
+      });
+
+      if (index <= 10) {
+        assert.equal(response.status, 400);
+      } else {
+        assert.equal(response.status, 429);
+        const payload = (await response.json()) as {
+          success: boolean;
+          data: null;
+          message?: string;
+        };
+
+        assert.equal(payload.success, false);
+        assert.equal(payload.data, null);
+        assert.match(String(payload.message), /Demasiados intentos de restablecimiento/);
+      }
+    }
+  });
 });

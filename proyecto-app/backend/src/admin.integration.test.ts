@@ -1,7 +1,7 @@
 import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { TestServer } from "./integration-helpers";
-import { loginAdmin, startTestServer, stopTestServer } from "./integration-helpers";
+import { loginAdmin, registerAndLoginCustomer, startTestServer, stopTestServer } from "./integration-helpers";
 
 let ctx: TestServer;
 
@@ -211,5 +211,52 @@ describe("Admin integration", () => {
     assert.equal(deletePayload.success, false);
     assert.equal(deletePayload.data, null);
     assert.match(String(deletePayload.message), /tiene productos asociados/);
+  });
+
+  it("should list password reset audit events for admin", async () => {
+    const customer = await registerAndLoginCustomer(ctx.baseUrl, "integration-admin-audit");
+
+    await fetch(`${ctx.baseUrl}/api/v1/auth/recover-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-forwarded-for": "10.10.10.10",
+        "user-agent": "ModaCom-Integration-Audit",
+      },
+      body: JSON.stringify({
+        email: customer.email,
+      }),
+    });
+
+    const adminToken = await loginAdmin(ctx.baseUrl);
+    const auditResponse = await fetch(`${ctx.baseUrl}/api/v1/admin/security/password-reset-events?page=1&pageSize=20`, {
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+      },
+    });
+
+    assert.equal(auditResponse.status, 200);
+
+    const auditPayload = (await auditResponse.json()) as {
+      success: boolean;
+      data: Array<{
+        userEmail?: string;
+        requestedIp?: string;
+        requestedUserAgent?: string;
+        status: string;
+      }>;
+      pagination: {
+        totalItems: number;
+      };
+    };
+
+    assert.equal(auditPayload.success, true);
+    assert.ok(Array.isArray(auditPayload.data));
+    assert.ok(auditPayload.pagination.totalItems >= 1);
+
+    const match = auditPayload.data.find((event) => event.userEmail === customer.email);
+    assert.ok(match);
+    assert.equal(match?.requestedIp, "10.10.10.10");
+    assert.equal(match?.requestedUserAgent, "ModaCom-Integration-Audit");
   });
 });
