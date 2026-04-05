@@ -121,13 +121,35 @@ describe("Auth integration", () => {
 
     assert.equal(registerResponse.status, 201);
 
-    const resetResponse = await fetch(`${ctx.baseUrl}/api/v1/auth/reset-password`, {
+    const recoverResponse = await fetch(`${ctx.baseUrl}/api/v1/auth/recover-password`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         email,
+      }),
+    });
+
+    assert.equal(recoverResponse.status, 200);
+    const recoverPayload = (await recoverResponse.json()) as {
+      success: boolean;
+      data: {
+        resetToken?: string;
+      } | null;
+    };
+
+    assert.equal(recoverPayload.success, true);
+    const resetToken = recoverPayload.data?.resetToken;
+    assert.ok(resetToken);
+
+    const resetResponse = await fetch(`${ctx.baseUrl}/api/v1/auth/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token: resetToken,
         password: "password456",
         confirmPassword: "password456",
       }),
@@ -160,5 +182,19 @@ describe("Auth integration", () => {
     });
 
     assert.equal(newLoginResponse.status, 200);
+
+    const resetReuseResponse = await fetch(`${ctx.baseUrl}/api/v1/auth/reset-password`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token: resetToken,
+        password: "password789",
+        confirmPassword: "password789",
+      }),
+    });
+
+    assert.equal(resetReuseResponse.status, 400);
   });
 });
