@@ -51,6 +51,18 @@ export const authRateLimit = createRateLimit({
   message: "Demasiados intentos de autenticación. Intenta nuevamente en unos minutos.",
 });
 
+export const authRecoverRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: "Demasiadas solicitudes de recuperación. Intenta nuevamente en unos minutos.",
+});
+
+export const authResetRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: "Demasiados intentos de restablecimiento. Intenta nuevamente en unos minutos.",
+});
+
 export const contactRateLimit = createRateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
