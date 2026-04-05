@@ -162,6 +162,16 @@ Admin products (`web/app/admin/productos/page.tsx`):
 
 ## 7) Execution Plan (phased)
 
+### Current status (2026-04-05)
+- [x] Phase 0 - Consolidation
+- [x] Phase 1 - Domain foundation
+- [x] Phase 2 - Public API
+- [x] Phase 3 - Auth + admin
+- [x] Phase 4 - Cart + checkout prep
+- [x] Phase 5 - Front integration
+- [~] Next focus: integration tests for core flows (backlog item 9)
+- [~] Integration tests status: smoke + auth flow (register/login/me) running in Docker
+
 ### Phase 0 - Consolidation
 - Keep `backend/src` as single source backend.
 - Mark `servidor/server.js` as legacy and stop new feature additions there.
@@ -190,6 +200,9 @@ Admin products (`web/app/admin/productos/page.tsx`):
 ### Phase 5 - Front integration
 - Replace `web/lib/services/*.ts` mock logic by HTTP calls to `/api/v1`.
 - Keep same function signatures to minimize UI churn.
+- Current progress: frontend services already use `/api/v1` when `NEXT_PUBLIC_API_URL` is present, with mock fallback.
+- Current progress: checkout now resolves/sends `addressId` for `POST /api/v1/orders`.
+- Current progress: cart UI includes shipping-address selector and blocks checkout when no address is available.
 
 ## 8) Implementation Backlog (ordered)
 
