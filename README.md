@@ -29,13 +29,21 @@ Contenido base:
 NODE_ENV=development
 MYSQL_ADDON_HOST=mysql
 MYSQL_ADDON_DB=modacom
-MYSQL_ADDON_USER=modacom
-MYSQL_ADDON_PASSWORD=root
+MYSQL_ADDON_USER=user
+MYSQL_ADDON_PASSWORD=password
 MYSQL_ADDON_PORT=3306
-MYSQL_ADDON_URI=mysql://modacom:root@mysql:3306/modacom
+MYSQL_ADDON_URI=mysql://user:password@mysql:3306/modacom
 BACKEND_PORT=5000
 FRONTEND_URL=http://localhost:3000
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
+PASSWORD_RESET_TOKEN_EXPIRES_IN=1h
+FRONTEND_RESET_PASSWORD_URL=http://localhost:3000/recuperar-password
+# También aceptado: EMAIL_API_KEY
+RESEND_API_KEY=re_xxxxxxxxx
+# También aceptado: EMAIL_DOMAIN
+RESEND_EMAIL_DOMAIN=tudominio.com
+# Optional: override sender address/display name
+# RESEND_FROM_EMAIL=ModaCom <noreply@tudominio.com>
 ```
 
 ## Levantar con Docker Compose
