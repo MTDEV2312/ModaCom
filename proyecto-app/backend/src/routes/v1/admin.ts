@@ -190,6 +190,7 @@ const mapPasswordResetEvent = (event: PasswordResetTokenWithUser) => {
     id: String(event.id),
     userId: String(event.userId),
     userEmail: event.user?.email ?? undefined,
+    providerMessageId: event.providerMessageId ?? undefined,
     requestedIp: event.requestedIp ?? undefined,
     requestedUserAgent: event.requestedUserAgent ?? undefined,
     usedIp: event.usedIp ?? undefined,

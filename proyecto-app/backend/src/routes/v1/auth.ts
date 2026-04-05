@@ -233,7 +233,7 @@ authV1Router.post("/auth/recover-password", validateBody(authRecoverSchema), asy
       const tokenId = crypto.randomUUID().replace(/-/g, "");
       const rawToken = crypto.randomBytes(32).toString("hex");
 
-      await PasswordResetToken.create({
+      const passwordResetToken = await PasswordResetToken.create({
         id: tokenId,
         userId: user.id,
         tokenHash: hashResetToken(rawToken),
@@ -246,6 +246,18 @@ authV1Router.post("/auth/recover-password", validateBody(authRecoverSchema), asy
         to: user.email,
         resetToken: rawToken,
       });
+
+      if (emailResult.providerMessageId) {
+        await passwordResetToken.update({ providerMessageId: emailResult.providerMessageId });
+      }
+
+      if (emailResult.delivered) {
+        console.info("Password reset email accepted by provider", {
+          userId: user.id,
+          provider: "resend",
+          providerMessageId: emailResult.providerMessageId,
+        });
+      }
 
       if (!emailResult.delivered && isEmailDeliveryConfigured()) {
         console.error("Password reset email delivery failed", {
