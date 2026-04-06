@@ -1,0 +1,283 @@
+"use client";
+
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import type { Address, CartItem } from '@/types';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Navbar } from '@/components/layout/navbar';
+import { Footer } from '@/components/layout/footer';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { clearAuthSession, ensureCustomerUser } from '@/lib/services/auth';
+import { getCart, updateCartItem, removeCartItem, clearCart, createOrderFromCart } from '@/lib/services/cart';
+import { getMyAddresses } from '@/lib/services/addresses';
+import type { Cart } from '@/types';
+
+export default function CartPage() {
+  const router = useRouter();
+  const [cart, setCart] = useState<Cart | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<string>('');
+  const [isChecking, setIsChecking] = useState(true);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+
+  const itemCount = useMemo(
+    () => cart?.items.reduce((acc: number, item: CartItem) => acc + item.quantity, 0) ?? 0,
+    [cart],
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    const validateSession = async () => {
+      const user = await ensureCustomerUser();
+      if (!active) return;
+
+      if (!user) {
+        clearAuthSession();
+        router.replace('/login');
+        return;
+      }
+
+      setIsChecking(false);
+    };
+
+    void validateSession();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (isChecking) return;
+
+    const fetchCart = async () => {
+      setIsLoading(true);
+      const response = await getCart();
+      if (response.success && response.data) {
+        setCart(response.data);
+      }
+      setIsLoading(false);
+    };
+
+    void fetchCart();
+  }, [isChecking]);
+
+  useEffect(() => {
+    if (isChecking) return;
+
+    const fetchAddresses = async () => {
+      const response = await getMyAddresses();
+      if (!response.success || !Array.isArray(response.data)) {
+        setAddresses([]);
+        setSelectedAddressId('');
+        return;
+      }
+
+      setAddresses(response.data);
+      const preferred = response.data.find((address) => address.isDefault) ?? response.data[0];
+      setSelectedAddressId(preferred?.id ?? '');
+    };
+
+    void fetchAddresses();
+  }, [isChecking]);
+
+  const handleQtyChange = async (itemId: string, quantity: number) => {
+    if (quantity < 1) return;
+
+    const response = await updateCartItem(itemId, quantity);
+    if (response.success) {
+      setCart(response.data);
+      setFeedback('Cantidad actualizada.');
+    } else {
+      setFeedback(response.message || 'No se pudo actualizar la cantidad.');
+    }
+  };
+
+  const handleRemove = async (itemId: string) => {
+    const response = await removeCartItem(itemId);
+    if (response.success) {
+      setCart(response.data);
+      setFeedback('Producto eliminado del carrito.');
+    } else {
+      setFeedback(response.message || 'No se pudo eliminar el producto.');
+    }
+  };
+
+  const handleClear = async () => {
+    const response = await clearCart();
+    if (response.success) {
+      const refreshed = await getCart();
+      if (refreshed.success) setCart(refreshed.data);
+      setFeedback('Carrito vaciado correctamente.');
+    } else {
+      setFeedback(response.message || 'No se pudo vaciar el carrito.');
+    }
+  };
+
+  const handleCheckout = async () => {
+    if (!selectedAddressId) {
+      setFeedback('Seleccioná una dirección para continuar con el pedido.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const response = await createOrderFromCart(selectedAddressId);
+    setIsSubmitting(false);
+
+    if (response.success) {
+      const refreshed = await getCart();
+      if (refreshed.success) setCart(refreshed.data);
+      setFeedback('Pedido creado exitosamente. Podés verlo en Mi Cuenta > Pedidos.');
+      return;
+    }
+
+    setFeedback(response.message || 'No se pudo crear el pedido.');
+  };
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted">
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+          <Spinner className="h-5 w-5" />
+          Validando sesión...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Navbar />
+      <main id="main-content" className="min-h-screen">
+        <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
+          <div className="mb-8">
+            <h1 className="font-serif text-3xl font-semibold">Tu carrito</h1>
+            <p className="mt-2 text-muted-foreground">
+              {isLoading ? 'Cargando carrito...' : `${itemCount} artículo(s) en tu carrito`}
+            </p>
+          </div>
+
+          {feedback ? (
+            <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">{feedback}</p>
+          ) : null}
+
+          {isLoading ? (
+            <p className="text-muted-foreground">Cargando...</p>
+          ) : !cart || cart.items.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Tu carrito está vacío</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">Agregá productos para comenzar tu compra.</p>
+                <Button asChild className="mt-4">
+                  <Link href="/catalogo/mujer">Ir al catálogo</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+              <div className="space-y-4">
+                {cart.items.map((item: CartItem) => (
+                  <Card key={item.id}>
+                    <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-medium">{item.product?.name || 'Producto'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.colorName ? `Color: ${item.colorName} ` : ''}
+                          {item.sizeName ? `| Talla: ${item.sizeName}` : ''}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{item.unitPrice.toFixed(2)} EUR c/u</p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={1}
+                          value={item.quantity}
+                          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                            const value = Number(event.target.value);
+                            if (!Number.isFinite(value) || value < 1) return;
+                            void handleQtyChange(item.id, value);
+                          }}
+                          className="w-20"
+                          aria-label={`Cantidad para ${item.product?.name || 'producto'}`}
+                        />
+                        <Button variant="outline" onClick={() => void handleRemove(item.id)}>
+                          Quitar
+                        </Button>
+                      </div>
+
+                      <p className="text-right font-semibold">{item.subtotal.toFixed(2)} EUR</p>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                <Button variant="ghost" onClick={() => void handleClear()}>
+                  Vaciar carrito
+                </Button>
+              </div>
+
+              <Card className="h-fit">
+                <CardHeader>
+                  <CardTitle>Resumen</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="space-y-2 pb-2">
+                    <Label htmlFor="shipping-address">Dirección de envío</Label>
+                    {addresses.length > 0 ? (
+                      <Select value={selectedAddressId} onValueChange={setSelectedAddressId}>
+                        <SelectTrigger id="shipping-address" aria-label="Seleccionar dirección de envío">
+                          <SelectValue placeholder="Seleccioná una dirección" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {addresses.map((address) => (
+                            <SelectItem key={address.id} value={address.id}>
+                              {`${address.street}, ${address.city} (${address.country})${address.isDefault ? ' - Predeterminada' : ''}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No tenés direcciones guardadas. Cargá una en{' '}
+                        <Link href="/mi-cuenta" className="underline underline-offset-4">
+                          Mi Cuenta
+                        </Link>
+                        .
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>{cart.summary.subtotal.toFixed(2)} EUR</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Envío</span>
+                    <span>{cart.summary.shippingTotal.toFixed(2)} EUR</span>
+                  </div>
+                  <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
+                    <span>Total</span>
+                    <span>{cart.summary.total.toFixed(2)} EUR</span>
+                  </div>
+                  <Button className="mt-4 w-full" onClick={() => void handleCheckout()} disabled={isSubmitting || addresses.length === 0 || !selectedAddressId}>
+                    {isSubmitting ? 'Procesando...' : 'Crear pedido'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
