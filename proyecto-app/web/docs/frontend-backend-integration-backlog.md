@@ -97,6 +97,7 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Prioridad: P0
 - Estimacion: S
 - Tipo: Frontend/Auth
+- Estado: Completado
 - Archivos:
   - web/lib/services/auth.ts
   - web/app/admin/layout.tsx
@@ -106,6 +107,9 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
   - Luego limpiar storage local y redirigir.
 - Criterios de aceptacion:
   - Logout invalida sesion en backend y frontend.
+- Validacion:
+  - `logout()` consume `POST /auth/logout` enviando `refreshToken` y limpia storage local.
+  - Typecheck frontend validado en Docker con `docker compose run --rm web sh -lc "npm install --no-fund --no-audit && npx tsc --noEmit"`.
 
 ## Sprint 2 - Cierre de flujos de autenticacion y contacto (P1)
 
