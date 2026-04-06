@@ -1,23 +1,6 @@
 import type { Offer, ApiResponse } from '@/types';
 import { getAuthHeader } from '@/lib/services/auth';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-const V1_BASE = `${API_BASE_URL.replace(/\/$/, '')}/api/v1`;
-
-const shouldUseBackend = Boolean(API_BASE_URL);
-
-function apiNotConfiguredMessage() {
-  return 'NEXT_PUBLIC_API_URL no está configurada para usar servicios reales.';
-}
-
-async function fetchFromBackend<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${V1_BASE}${path}`, {
-    cache: 'no-store',
-    ...(options ?? {}),
-  });
-
-  return (await response.json()) as T;
-}
+import { apiNotConfiguredMessage, mergeJsonHeaders, requestAuthenticatedJson, requestJson, shouldUseBackend } from '@/lib/services/http-client';
 
 export async function getOffers(): Promise<ApiResponse<Offer[]>> {
   if (!shouldUseBackend) {
@@ -29,12 +12,12 @@ export async function getOffers(): Promise<ApiResponse<Offer[]>> {
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Offer[]>>('/offers');
-  } catch {
+    return await requestJson<ApiResponse<Offer[]>>('/offers');
+  } catch (error) {
     return {
       data: [],
       success: false,
-      message: 'No se pudieron cargar las promociones activas.',
+      message: error instanceof Error ? error.message : 'No se pudieron cargar las promociones activas.',
     };
   }
 }
@@ -49,12 +32,12 @@ export async function getAllOffers(): Promise<ApiResponse<Offer[]>> {
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Offer[]>>('/offers/all');
-  } catch {
+    return await requestJson<ApiResponse<Offer[]>>('/offers/all');
+  } catch (error) {
     return {
       data: [],
       success: false,
-      message: 'No se pudieron cargar todas las promociones.',
+      message: error instanceof Error ? error.message : 'No se pudieron cargar todas las promociones.',
     };
   }
 }
@@ -69,7 +52,7 @@ export async function getOfferById(id: string): Promise<ApiResponse<Offer | null
   }
 
   try {
-    const response = await fetchFromBackend<ApiResponse<Offer[]>>('/offers/all');
+    const response = await requestJson<ApiResponse<Offer[]>>('/offers/all');
     if (!response.success) {
       return {
         success: false,
@@ -103,19 +86,16 @@ export async function createOffer(offer: Omit<Offer, 'id'>): Promise<ApiResponse
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Offer>>('/admin/offers', {
+    return await requestAuthenticatedJson<ApiResponse<Offer>>('/admin/offers', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: mergeJsonHeaders(getAuthHeader()),
       body: JSON.stringify(offer),
     });
-  } catch {
+  } catch (error) {
     return {
       data: null as unknown as Offer,
       success: false,
-      message: 'No se pudo crear la promoción.',
+      message: error instanceof Error ? error.message : 'No se pudo crear la promoción.',
     };
   }
 }
@@ -130,19 +110,16 @@ export async function updateOffer(id: string, updates: Partial<Offer>): Promise<
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Offer>>(`/admin/offers/${id}`, {
+    return await requestAuthenticatedJson<ApiResponse<Offer>>(`/admin/offers/${id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: mergeJsonHeaders(getAuthHeader()),
       body: JSON.stringify(updates),
     });
-  } catch {
+  } catch (error) {
     return {
       data: null as unknown as Offer,
       success: false,
-      message: 'No se pudo actualizar la promoción.',
+      message: error instanceof Error ? error.message : 'No se pudo actualizar la promoción.',
     };
   }
 }
@@ -157,17 +134,17 @@ export async function deleteOffer(id: string): Promise<ApiResponse<null>> {
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<null>>(`/admin/offers/${id}`, {
+    return await requestAuthenticatedJson<ApiResponse<null>>(`/admin/offers/${id}`, {
       method: 'DELETE',
       headers: {
         ...getAuthHeader(),
       },
     });
-  } catch {
+  } catch (error) {
     return {
       data: null,
       success: false,
-      message: 'No se pudo eliminar la promoción.',
+      message: error instanceof Error ? error.message : 'No se pudo eliminar la promoción.',
     };
   }
 }

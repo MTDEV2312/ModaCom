@@ -1,22 +1,6 @@
 import type { Product, ProductFilters, PaginatedResponse, ApiResponse, Category } from '@/types';
 import { getAuthHeader } from '@/lib/services/auth';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-const V1_BASE = `${API_BASE_URL.replace(/\/$/, '')}/api/v1`;
-const shouldUseBackend = Boolean(API_BASE_URL);
-
-function apiNotConfiguredMessage() {
-  return 'NEXT_PUBLIC_API_URL no está configurada para usar servicios reales.';
-}
-
-async function fetchFromBackend<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${V1_BASE}${path}`, {
-    cache: 'no-store',
-    ...(options ?? {}),
-  });
-
-  return (await response.json()) as T;
-}
+import { apiNotConfiguredMessage, requestAuthenticatedJson, requestJson, shouldUseBackend, mergeJsonHeaders } from '@/lib/services/http-client';
 
 export async function getProducts(
   filters?: ProductFilters,
@@ -50,12 +34,12 @@ export async function getProducts(
   if (filters?.sortBy) params.set('sortBy', filters.sortBy);
 
   try {
-    return await fetchFromBackend<PaginatedResponse<Product>>(`/products?${params.toString()}`);
-  } catch {
+    return await requestJson<PaginatedResponse<Product>>(`/products?${params.toString()}`);
+  } catch (error) {
     return {
       success: false,
       data: [],
-      message: 'No se pudieron cargar los productos.',
+      message: error instanceof Error ? error.message : 'No se pudieron cargar los productos.',
       pagination: {
         page,
         pageSize,
@@ -76,12 +60,12 @@ export async function getProductBySlug(slug: string): Promise<ApiResponse<Produc
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Product | null>>(`/products/${slug}`);
-  } catch {
+    return await requestJson<ApiResponse<Product | null>>(`/products/${slug}`);
+  } catch (error) {
     return {
       data: null,
       success: false,
-      message: 'No se pudo cargar el producto.',
+      message: error instanceof Error ? error.message : 'No se pudo cargar el producto.',
     };
   }
 }
@@ -96,12 +80,12 @@ export async function getFeaturedProducts(): Promise<ApiResponse<Product[]>> {
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Product[]>>('/products/featured');
-  } catch {
+    return await requestJson<ApiResponse<Product[]>>('/products/featured');
+  } catch (error) {
     return {
       data: [],
       success: false,
-      message: 'No se pudieron cargar los productos destacados.',
+      message: error instanceof Error ? error.message : 'No se pudieron cargar los productos destacados.',
     };
   }
 }
@@ -116,12 +100,12 @@ export async function getNewArrivals(): Promise<ApiResponse<Product[]>> {
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Product[]>>('/products/new-arrivals');
-  } catch {
+    return await requestJson<ApiResponse<Product[]>>('/products/new-arrivals');
+  } catch (error) {
     return {
       data: [],
       success: false,
-      message: 'No se pudieron cargar los nuevos ingresos.',
+      message: error instanceof Error ? error.message : 'No se pudieron cargar los nuevos ingresos.',
     };
   }
 }
@@ -136,12 +120,12 @@ export async function getCategories(): Promise<ApiResponse<Category[]>> {
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Category[]>>('/categories');
-  } catch {
+    return await requestJson<ApiResponse<Category[]>>('/categories');
+  } catch (error) {
     return {
       data: [],
       success: false,
-      message: 'No se pudieron cargar las categorías.',
+      message: error instanceof Error ? error.message : 'No se pudieron cargar las categorías.',
     };
   }
 }
@@ -157,12 +141,9 @@ export async function createProduct(product: Omit<Product, 'id' | 'createdAt' | 
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Product>>('/admin/products', {
+    return await requestAuthenticatedJson<ApiResponse<Product>>('/admin/products', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: mergeJsonHeaders(getAuthHeader()),
       body: JSON.stringify({
         name: product.name,
         description: product.description,
@@ -175,11 +156,11 @@ export async function createProduct(product: Omit<Product, 'id' | 'createdAt' | 
         images: product.images,
       }),
     });
-  } catch {
+  } catch (error) {
     return {
       data: null as unknown as Product,
       success: false,
-      message: 'No se pudo crear el producto.',
+      message: error instanceof Error ? error.message : 'No se pudo crear el producto.',
     };
   }
 }
@@ -194,12 +175,9 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Product>>(`/admin/products/${id}`, {
+    return await requestAuthenticatedJson<ApiResponse<Product>>(`/admin/products/${id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: mergeJsonHeaders(getAuthHeader()),
       body: JSON.stringify({
         name: updates.name,
         description: updates.description,
@@ -211,11 +189,11 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
         isNew: updates.isNew,
       }),
     });
-  } catch {
+  } catch (error) {
     return {
       data: null as unknown as Product,
       success: false,
-      message: 'No se pudo actualizar el producto.',
+      message: error instanceof Error ? error.message : 'No se pudo actualizar el producto.',
     };
   }
 }
@@ -230,17 +208,17 @@ export async function deleteProduct(id: string): Promise<ApiResponse<null>> {
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<null>>(`/admin/products/${id}`, {
+    return await requestAuthenticatedJson<ApiResponse<null>>(`/admin/products/${id}`, {
       method: 'DELETE',
       headers: {
         ...getAuthHeader(),
       },
     });
-  } catch {
+  } catch (error) {
     return {
       data: null,
       success: false,
-      message: 'No se pudo eliminar el producto.',
+      message: error instanceof Error ? error.message : 'No se pudo eliminar el producto.',
     };
   }
 }
@@ -255,16 +233,16 @@ export async function getAdminCategories(): Promise<ApiResponse<Category[]>> {
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Category[]>>('/admin/categories', {
+    return await requestAuthenticatedJson<ApiResponse<Category[]>>('/admin/categories', {
       headers: {
         ...getAuthHeader(),
       },
     });
-  } catch {
+  } catch (error) {
     return {
       data: [],
       success: false,
-      message: 'No se pudieron cargar las categorías admin.',
+      message: error instanceof Error ? error.message : 'No se pudieron cargar las categorías admin.',
     };
   }
 }
@@ -279,19 +257,16 @@ export async function createCategory(category: Omit<Category, 'id'> & { isActive
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Category>>('/admin/categories', {
+    return await requestAuthenticatedJson<ApiResponse<Category>>('/admin/categories', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: mergeJsonHeaders(getAuthHeader()),
       body: JSON.stringify(category),
     });
-  } catch {
+  } catch (error) {
     return {
       data: null as unknown as Category,
       success: false,
-      message: 'No se pudo crear la categoría.',
+      message: error instanceof Error ? error.message : 'No se pudo crear la categoría.',
     };
   }
 }
@@ -306,19 +281,16 @@ export async function updateCategory(id: string, updates: Partial<Category> & { 
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<Category>>(`/admin/categories/${id}`, {
+    return await requestAuthenticatedJson<ApiResponse<Category>>(`/admin/categories/${id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
+      headers: mergeJsonHeaders(getAuthHeader()),
       body: JSON.stringify(updates),
     });
-  } catch {
+  } catch (error) {
     return {
       data: null as unknown as Category,
       success: false,
-      message: 'No se pudo actualizar la categoría.',
+      message: error instanceof Error ? error.message : 'No se pudo actualizar la categoría.',
     };
   }
 }
@@ -333,17 +305,17 @@ export async function deleteCategory(id: string): Promise<ApiResponse<null>> {
   }
 
   try {
-    return await fetchFromBackend<ApiResponse<null>>(`/admin/categories/${id}`, {
+    return await requestAuthenticatedJson<ApiResponse<null>>(`/admin/categories/${id}`, {
       method: 'DELETE',
       headers: {
         ...getAuthHeader(),
       },
     });
-  } catch {
+  } catch (error) {
     return {
       data: null,
       success: false,
-      message: 'No se pudo eliminar la categoría.',
+      message: error instanceof Error ? error.message : 'No se pudo eliminar la categoría.',
     };
   }
 }

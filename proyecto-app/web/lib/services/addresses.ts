@@ -1,21 +1,17 @@
 import type { Address, ApiResponse } from '@/types';
 import { getAuthHeader, getStoredUser } from '@/lib/services/auth';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-const V1_BASE = `${API_BASE_URL.replace(/\/$/, '')}/api/v1`;
-const shouldUseBackend = Boolean(API_BASE_URL);
+import { apiNotConfiguredMessage, requestAuthenticatedJson, requestJson, shouldUseBackend } from '@/lib/services/http-client';
 
 export async function getMyAddresses(): Promise<ApiResponse<Address[]>> {
   if (shouldUseBackend) {
     try {
-      const response = await fetch(`${V1_BASE}/addresses`, {
+      const response = await requestAuthenticatedJson<ApiResponse<Address[]>>('/addresses', {
         headers: {
           ...getAuthHeader(),
         },
-        cache: 'no-store',
       });
 
-      return (await response.json()) as ApiResponse<Address[]>;
+      return response;
     } catch {
       // fallback to local cached user
     }
@@ -42,12 +38,12 @@ export async function createAddress(payload: AddressInput): Promise<ApiResponse<
     return {
       success: false,
       data: null as unknown as Address,
-      message: 'Configurá NEXT_PUBLIC_API_URL para crear direcciones.',
+      message: apiNotConfiguredMessage(),
     };
   }
 
   try {
-    const response = await fetch(`${V1_BASE}/addresses`, {
+    const response = await requestAuthenticatedJson<ApiResponse<Address>>('/addresses', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,12 +52,12 @@ export async function createAddress(payload: AddressInput): Promise<ApiResponse<
       body: JSON.stringify(payload),
     });
 
-    return (await response.json()) as ApiResponse<Address>;
-  } catch {
+    return response;
+  } catch (error) {
     return {
       success: false,
       data: null as unknown as Address,
-      message: 'No se pudo crear la dirección.',
+      message: error instanceof Error ? error.message : 'No se pudo crear la dirección.',
     };
   }
 }
@@ -71,24 +67,24 @@ export async function setDefaultAddress(addressId: string): Promise<ApiResponse<
     return {
       success: false,
       data: null as unknown as Address,
-      message: 'Configurá NEXT_PUBLIC_API_URL para actualizar direcciones.',
+      message: apiNotConfiguredMessage(),
     };
   }
 
   try {
-    const response = await fetch(`${V1_BASE}/addresses/${addressId}/default`, {
+    const response = await requestAuthenticatedJson<ApiResponse<Address>>(`/addresses/${addressId}/default`, {
       method: 'PATCH',
       headers: {
         ...getAuthHeader(),
       },
     });
 
-    return (await response.json()) as ApiResponse<Address>;
-  } catch {
+    return response;
+  } catch (error) {
     return {
       success: false,
       data: null as unknown as Address,
-      message: 'No se pudo actualizar la dirección predeterminada.',
+      message: error instanceof Error ? error.message : 'No se pudo actualizar la dirección predeterminada.',
     };
   }
 }
@@ -98,24 +94,24 @@ export async function removeAddress(addressId: string): Promise<ApiResponse<null
     return {
       success: false,
       data: null,
-      message: 'Configurá NEXT_PUBLIC_API_URL para eliminar direcciones.',
+      message: apiNotConfiguredMessage(),
     };
   }
 
   try {
-    const response = await fetch(`${V1_BASE}/addresses/${addressId}`, {
+    const response = await requestAuthenticatedJson<ApiResponse<null>>(`/addresses/${addressId}`, {
       method: 'DELETE',
       headers: {
         ...getAuthHeader(),
       },
     });
 
-    return (await response.json()) as ApiResponse<null>;
-  } catch {
+    return response;
+  } catch (error) {
     return {
       success: false,
       data: null,
-      message: 'No se pudo eliminar la dirección.',
+      message: error instanceof Error ? error.message : 'No se pudo eliminar la dirección.',
     };
   }
 }
