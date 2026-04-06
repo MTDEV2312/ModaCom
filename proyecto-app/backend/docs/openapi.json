@@ -149,6 +149,69 @@
           "addressId": { "type": "integer" }
         }
       },
+      "OfferItem": {
+        "type": "object",
+        "required": ["id", "title", "description", "discountPercentage", "image", "validFrom", "validUntil", "active", "applicableCategories"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "discountPercentage": { "type": "number" },
+          "code": { "type": "string" },
+          "image": { "type": "string" },
+          "validFrom": { "type": "string", "format": "date-time" },
+          "validUntil": { "type": "string", "format": "date-time" },
+          "active": { "type": "boolean" },
+          "applicableCategories": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "PasswordResetEvent": {
+        "type": "object",
+        "required": ["id", "userId", "expiresAt", "status", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "userEmail": { "type": "string", "format": "email" },
+          "providerMessageId": { "type": "string" },
+          "requestedIp": { "type": "string" },
+          "requestedUserAgent": { "type": "string" },
+          "usedIp": { "type": "string" },
+          "usedUserAgent": { "type": "string" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "usedAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["active", "used", "expired"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PasswordResetEventsResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PasswordResetEvent" }
+          },
+          "pagination": { "$ref": "#/components/schemas/Paginated" },
+          "message": { "type": "string" }
+        },
+        "required": ["success", "data", "pagination"]
+      },
+      "OfferListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OfferItem" }
+          },
+          "message": { "type": "string" }
+        },
+        "required": ["success", "data"]
+      },
       "AdminContactStatusBody": {
         "type": "object",
         "required": ["status"],
@@ -418,7 +481,16 @@
       "get": {
         "tags": ["Catalog"],
         "summary": "Ofertas activas en vigencia",
-        "responses": { "200": { "description": "OK" } }
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OfferListResponse" }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/offers/all": {
@@ -428,7 +500,16 @@
         "parameters": [
           { "name": "includeInactive", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] } }
         ],
-        "responses": { "200": { "description": "OK" } }
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OfferListResponse" }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/contact/messages": {
@@ -707,7 +788,16 @@
           { "name": "pageSize", "in": "query", "schema": { "type": "integer" } },
           { "name": "email", "in": "query", "schema": { "type": "string", "format": "email" } }
         ],
-        "responses": { "200": { "description": "OK" } }
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PasswordResetEventsResponse" }
+              }
+            }
+          }
+        }
       }
     }
   }
