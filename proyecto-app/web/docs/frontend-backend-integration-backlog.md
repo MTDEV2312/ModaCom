@@ -23,6 +23,7 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Prioridad: P0
 - Estimacion: S
 - Tipo: Backend
+- Estado: Completado
 - Archivos:
   - backend/src/routes/v1/catalog.ts
 - Problema:
@@ -34,11 +35,14 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Criterios de aceptacion:
   - GET /api/v1/offers/all responde de forma unica y consistente.
   - No hay rutas duplicadas para el mismo metodo/path.
+- Validacion:
+  - Verificado con `docker compose run --rm backend npm run test:integration:shop`.
 
 ### TKT-002 - Alinear OpenAPI con implementacion real
 - Prioridad: P0
 - Estimacion: S
 - Tipo: Backend/Docs
+- Estado: Completado
 - Archivos:
   - backend/docs/openapi.json
   - backend/src/routes/v1/*.ts
@@ -48,6 +52,8 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Criterios de aceptacion:
   - openapi.json refleja exactamente los endpoints implementados.
   - QA puede testear por contrato sin ambiguedades.
+- Validacion:
+  - OpenAPI actualizado con respuestas reales para ofertas y auditoria de reset.
 
 ## Sprint 1 - Capa de cliente API unificada en frontend (P0)
 
@@ -55,6 +61,7 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Prioridad: P0
 - Estimacion: M
 - Tipo: Frontend
+- Estado: Completado
 - Archivos sugeridos:
   - web/lib/services/http-client.ts (nuevo)
   - web/lib/services/*.ts
@@ -65,11 +72,14 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Criterios de aceptacion:
   - Servicios usan una sola capa base.
   - Error handling consistente para 4xx/5xx.
+- Validacion:
+  - Typecheck del frontend ejecutado en Docker con `docker compose run --rm web sh -lc "npm install --no-fund --no-audit && npx tsc --noEmit"`.
 
 ### TKT-004 - Implementar estrategia de refresh token en 401
 - Prioridad: P0
 - Estimacion: M
 - Tipo: Frontend/Auth
+- Estado: Completado
 - Archivos:
   - web/lib/services/auth.ts
   - web/lib/services/http-client.ts (si existe)
@@ -80,6 +90,8 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Criterios de aceptacion:
   - Sesion no se corta abruptamente al expirar access token.
   - No hay loops de refresh infinitos.
+- Validacion:
+  - Requests autenticadas reintentan una vez con refresh token y limpian sesion + redirigen a /login si falla.
 
 ### TKT-005 - Exponer logout real en frontend
 - Prioridad: P0

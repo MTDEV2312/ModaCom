@@ -35,7 +35,7 @@ export default function LoginPage() {
       return;
     }
 
-    setAuthSession(response.data.token, response.data.user);
+    setAuthSession(response.data.token, response.data.user, response.data.refreshToken);
     setSuccess(true);
 
     setTimeout(() => {
