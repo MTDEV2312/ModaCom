@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { Spinner } from '@/components/ui/spinner';
-import { clearAuthSession, ensureCustomerUser } from '@/lib/services/auth';
+import { clearAuthSession, ensureCustomerUser, logout } from '@/lib/services/auth';
 
 export default function CustomerProtectedLayout({
   children,
@@ -23,6 +23,7 @@ export default function CustomerProtectedLayout({
       if (!active) return;
 
       if (!user) {
+        await logout();
         clearAuthSession();
         router.replace('/login');
         return;

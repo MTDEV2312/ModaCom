@@ -68,6 +68,37 @@ export async function recoverPassword(data: RecoverPasswordData): Promise<ApiRes
   }
 }
 
+export async function logout(): Promise<ApiResponse<null>> {
+  const refreshToken = getRefreshToken();
+
+  if (!shouldUseBackend) {
+    clearAuthSession();
+    return {
+      success: true,
+      data: null,
+      message: 'Sesión cerrada en frontend.',
+    };
+  }
+
+  try {
+    const response = await requestJson<ApiResponse<null>>('/auth/logout', {
+      method: 'POST',
+      headers: mergeJsonHeaders(),
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+    });
+
+    clearAuthSession();
+    return response;
+  } catch (error) {
+    clearAuthSession();
+    return {
+      success: false,
+      data: null,
+      message: error instanceof Error ? error.message : 'No se pudo cerrar la sesión en el servidor.',
+    };
+  }
+}
+
 export async function me(): Promise<ApiResponse<User>> {
   if (!shouldUseBackend) {
     return { data: null as unknown as User, success: false, message: apiNotConfiguredMessage() };

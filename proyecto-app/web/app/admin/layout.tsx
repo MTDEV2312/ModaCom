@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Grid2x2, Package, Tag, LayoutDashboard, LogOut } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
-import { clearAuthSession, me } from '@/lib/services/auth';
+import { clearAuthSession, logout, me } from '@/lib/services/auth';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -46,7 +46,8 @@ export default function AdminLayout({
     };
   }, [router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     clearAuthSession();
     router.push('/');
   };
@@ -98,7 +99,7 @@ export default function AdminLayout({
         <div className="border-t border-border p-4">
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => void handleLogout()}
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <LogOut className="h-5 w-5" aria-hidden="true" />

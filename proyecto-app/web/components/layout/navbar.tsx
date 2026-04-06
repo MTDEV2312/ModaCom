@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { clearAuthSession, getStoredUser, resolveCurrentUser } from '@/lib/services/auth';
+import { clearAuthSession, getStoredUser, logout, resolveCurrentUser } from '@/lib/services/auth';
 import { getCart } from '@/lib/services/cart';
 import type { User as AppUser } from '@/types';
 import {
@@ -73,7 +73,8 @@ export function Navbar() {
     };
   }, [pathname]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     clearAuthSession();
     setUser(null);
     setCartCount(0);
@@ -268,7 +269,7 @@ export function Navbar() {
                     </>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>Cerrar sesión</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void handleLogout()}>Cerrar sesión</DropdownMenuItem>
                 </>
               )}
             </DropdownMenuContent>
