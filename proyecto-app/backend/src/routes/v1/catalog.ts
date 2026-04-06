@@ -78,6 +78,19 @@ const mapProduct = (product: Product & {
   updatedAt: product.updatedAt.toISOString(),
 });
 
+const mapOffer = (offer: Offer & { categories?: Category[] }) => ({
+  id: String(offer.id),
+  title: offer.title,
+  description: offer.description,
+  discountPercentage: offer.discountPercentage,
+  code: offer.code ?? undefined,
+  image: offer.image,
+  validFrom: offer.validFrom.toISOString(),
+  validUntil: offer.validUntil.toISOString(),
+  active: offer.active,
+  applicableCategories: (offer.get("categories") as Category[] | undefined)?.map((category) => category.slug) ?? [],
+});
+
 catalogV1Router.get("/categories", async (_req: any, res: any) => {
   try {
     const categories = await Category.findAll({
@@ -346,18 +359,7 @@ catalogV1Router.get("/offers", async (_req: any, res: any) => {
 
     return res.status(200).json({
       success: true,
-      data: offers.map((offer) => ({
-        id: String(offer.id),
-        title: offer.title,
-        description: offer.description,
-        discountPercentage: offer.discountPercentage,
-        code: offer.code ?? undefined,
-        image: offer.image,
-        validFrom: offer.validFrom.toISOString(),
-        validUntil: offer.validUntil.toISOString(),
-        active: offer.active,
-        applicableCategories: (offer.get("categories") as Category[] | undefined)?.map((category) => category.slug) ?? [],
-      })),
+      data: offers.map(mapOffer),
     });
   } catch (error) {
     return res.status(500).json({
@@ -385,62 +387,13 @@ catalogV1Router.get("/offers/all", validateQuery(offersAllQuerySchema), async (r
 
     return res.status(200).json({
       success: true,
-      data: offers.map((offer) => ({
-        id: String(offer.id),
-        title: offer.title,
-        description: offer.description,
-        discountPercentage: offer.discountPercentage,
-        code: offer.code ?? undefined,
-        image: offer.image,
-        validFrom: offer.validFrom.toISOString(),
-        validUntil: offer.validUntil.toISOString(),
-        active: offer.active,
-        applicableCategories:
-          (offer.get("categories") as Category[] | undefined)?.map((category) => category.slug) ?? [],
-      })),
+      data: offers.map(mapOffer),
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       data: [],
       message: error instanceof Error ? error.message : "Error cargando todas las ofertas",
-    });
-  }
-});
-
-catalogV1Router.get("/offers/all", async (_req: any, res: any) => {
-  try {
-    const offers = await Offer.findAll({
-      include: [
-        {
-          model: Category,
-          as: "categories",
-          through: { attributes: [] },
-        },
-      ],
-      order: [["createdAt", "DESC"]],
-    });
-
-    return res.status(200).json({
-      success: true,
-      data: offers.map((offer) => ({
-        id: String(offer.id),
-        title: offer.title,
-        description: offer.description,
-        discountPercentage: offer.discountPercentage,
-        code: offer.code ?? undefined,
-        image: offer.image,
-        validFrom: offer.validFrom.toISOString(),
-        validUntil: offer.validUntil.toISOString(),
-        active: offer.active,
-        applicableCategories: (offer.get("categories") as Category[] | undefined)?.map((category) => category.slug) ?? [],
-      })),
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      data: [],
-      message: error instanceof Error ? error.message : "Error cargando ofertas",
     });
   }
 });
