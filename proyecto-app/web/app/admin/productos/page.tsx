@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatCurrency } from '@/lib/format';
 import {
   Plus,
   Search,
@@ -364,10 +365,10 @@ export default function AdminProductsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div>
-                        <p className="font-medium">{product.price.toFixed(2)} €</p>
+                        <p className="font-medium">{formatCurrency(product.price)}</p>
                         {product.originalPrice && (
                           <p className="text-sm text-muted-foreground line-through">
-                            {product.originalPrice.toFixed(2)} €
+                            {formatCurrency(product.originalPrice)}
                           </p>
                         )}
                       </div>
@@ -787,11 +788,11 @@ export default function AdminProductsPage() {
                 </p>
                 <div className="mt-3 flex items-baseline gap-2">
                   <span className="text-xl font-semibold">
-                    {selectedProduct.price.toFixed(2)} €
+                    {formatCurrency(selectedProduct.price)}
                   </span>
                   {selectedProduct.originalPrice && (
                     <span className="text-muted-foreground line-through">
-                      {selectedProduct.originalPrice.toFixed(2)} €
+                      {formatCurrency(selectedProduct.originalPrice)}
                     </span>
                   )}
                 </div>
