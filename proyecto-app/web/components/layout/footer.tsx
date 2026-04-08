@@ -109,12 +109,12 @@ export function Footer() {
         <div className="mt-12 flex flex-wrap items-center justify-center gap-6 border-t border-border pt-8 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4" aria-hidden="true" />
-            <span>Madrid, España</span>
+            <span>Quito, Ecuador</span>
           </div>
           <div className="flex items-center gap-2">
             <Phone className="h-4 w-4" aria-hidden="true" />
-            <a href="tel:+34900123456" className="hover:text-foreground">
-              +34 900 123 456
+            <a href="tel:+593225551234" className="hover:text-foreground">
+              +593 2 555 1234
             </a>
           </div>
           <div className="flex items-center gap-2">

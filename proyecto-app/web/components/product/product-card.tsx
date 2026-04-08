@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { addToCart } from '@/lib/services/cart';
@@ -179,11 +180,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
         {/* Price */}
         <div className="mt-auto flex items-baseline gap-2 pt-3">
           <span className="text-lg font-semibold text-foreground">
-            {product.price.toFixed(2)} €
+            {formatCurrency(product.price)}
           </span>
           {product.originalPrice && (
             <span className="text-sm text-muted-foreground line-through">
-              {product.originalPrice.toFixed(2)} €
+              {formatCurrency(product.originalPrice)}
             </span>
           )}
         </div>

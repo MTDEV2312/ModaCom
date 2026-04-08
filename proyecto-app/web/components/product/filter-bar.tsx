@@ -24,6 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '@/components/ui/slider';
 import { SlidersHorizontal, X, Search } from 'lucide-react';
 import type { ProductFilters } from '@/types';
+import { formatCurrency } from '@/lib/format';
 
 interface FilterBarProps {
   totalProducts: number;
@@ -232,8 +233,8 @@ export function FilterBar({ totalProducts, categorySlug }: FilterBarProps) {
                       aria-label="Seleccionar rango de precio"
                     />
                     <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
-                      <span>{priceRange[0]} €</span>
-                      <span>{priceRange[1]} €</span>
+                      <span>{formatCurrency(priceRange[0])}</span>
+                      <span>{formatCurrency(priceRange[1])}</span>
                     </div>
                   </div>
                 </div>
