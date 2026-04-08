@@ -17,6 +17,7 @@ import { getCart, updateCartItem, removeCartItem, clearCart, createOrderFromCart
 import { getMyAddresses } from '@/lib/services/addresses';
 import type { Cart } from '@/types';
 import { AlertCircle, CheckCircle, InfoIcon } from 'lucide-react';
+import { formatCurrency } from '@/lib/format';
 
 export default function CartPage() {
   const router = useRouter();
@@ -215,7 +216,7 @@ export default function CartPage() {
                           {item.colorName ? `Color: ${item.colorName} ` : ''}
                           {item.sizeName ? `| Talla: ${item.sizeName}` : ''}
                         </p>
-                        <p className="text-sm text-muted-foreground">{item.unitPrice.toFixed(2)} EUR c/u</p>
+                        <p className="text-sm text-muted-foreground">{formatCurrency(item.unitPrice)} c/u</p>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -236,7 +237,7 @@ export default function CartPage() {
                         </Button>
                       </div>
 
-                      <p className="text-right font-semibold">{item.subtotal.toFixed(2)} EUR</p>
+                      <p className="text-right font-semibold">{formatCurrency(item.subtotal)}</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -278,15 +279,15 @@ export default function CartPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>{cart.summary.subtotal.toFixed(2)} EUR</span>
+                    <span>{formatCurrency(cart.summary.subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Envío</span>
-                    <span>{cart.summary.shippingTotal.toFixed(2)} EUR</span>
+                    <span>{formatCurrency(cart.summary.shippingTotal)}</span>
                   </div>
                   <div className="flex justify-between border-t border-border pt-2 text-base font-semibold">
                     <span>Total</span>
-                    <span>{cart.summary.total.toFixed(2)} EUR</span>
+                    <span>{formatCurrency(cart.summary.total)}</span>
                   </div>
                   <Button className="mt-4 w-full" onClick={() => void handleCheckout()} disabled={isSubmitting || addresses.length === 0 || !selectedAddressId}>
                     {isSubmitting ? 'Procesando...' : 'Crear pedido'}

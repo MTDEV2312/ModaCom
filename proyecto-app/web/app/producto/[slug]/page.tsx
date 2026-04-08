@@ -21,6 +21,7 @@ import { Heart, ShoppingBag, Truck, RefreshCw, Shield, Minus, Plus, Check, Alert
 import { getProductBySlug } from '@/lib/services/products';
 import { addToCart } from '@/lib/services/cart';
 import type { Product } from '@/types';
+import { formatCurrency } from '@/lib/format';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -213,11 +214,11 @@ export default function ProductDetailPage() {
               {/* Price */}
               <div className="mt-4 flex items-baseline gap-3">
                 <span className="text-2xl font-semibold text-foreground">
-                  {product.price.toFixed(2)} €
+                  {formatCurrency(product.price)}
                 </span>
                 {product.originalPrice && (
                   <span className="text-lg text-muted-foreground line-through">
-                    {product.originalPrice.toFixed(2)} €
+                    {formatCurrency(product.originalPrice)}
                   </span>
                 )}
               </div>
@@ -373,7 +374,7 @@ export default function ProductDetailPage() {
               {/* Features */}
               <div className="mt-10 grid gap-4 border-t border-border pt-8">
                 {[
-                  { icon: Truck, text: 'Envío gratis en pedidos +75€' },
+                  { icon: Truck, text: 'Envío gratis en pedidos +$75' },
                   { icon: RefreshCw, text: 'Devolución gratuita en 30 días' },
                   { icon: Shield, text: 'Pago 100% seguro' },
                 ].map((feature) => (
