@@ -117,6 +117,7 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Prioridad: P1
 - Estimacion: M
 - Tipo: Frontend/Auth
+- Estado: Completado
 - Archivos sugeridos:
   - web/app/(auth)/reset-password/page.tsx (nuevo)
   - web/lib/services/auth.ts
@@ -131,6 +132,7 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Prioridad: P1
 - Estimacion: S
 - Tipo: Frontend
+- Estado: Completado
 - Archivos:
   - web/lib/services/contact.ts (nuevo)
   - web/app/contacto/page.tsx
@@ -140,6 +142,10 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
   - Mostrar mensajes de exito/error del backend.
 - Criterios de aceptacion:
   - Mensajes de contacto se persisten en backend.
+- Validacion:
+  - Servicio de contacto creado e integrado.
+  - Typecheck frontend validado en Docker.
+  - Tests de integración backend pasando (should create contact message, should enforce contact rate limit).
 
 ## Sprint 3 - Robustez funcional de dominio compra (P1)
 
@@ -147,6 +153,7 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Prioridad: P1
 - Estimacion: M
 - Tipo: Frontend
+- Estado: Completado
 - Archivos:
   - web/lib/services/cart.ts
   - web/app/carrito/page.tsx
@@ -156,11 +163,18 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
   - Mostrar feedback accionable al usuario.
 - Criterios de aceptacion:
   - Usuario entiende por que falla cada accion.
+- Validacion:
+  - Servicio de carrito mejorado con manejo de códigos de error específicos (401, 404, 409, 500).
+  - Página de carrito con feedback diferenciado por tipo (error, success, info).
+  - Página de producto con mensajes de error específicos al agregar al carrito.
+  - Typecheck frontend validado en Docker sin errores.
+  - Tests de integración backend pasando (incluyendo 409 para stock insuficiente).
 
 ### TKT-009 - Revisar coherencia de tipados Order y Cart
 - Prioridad: P1
 - Estimacion: S
 - Tipo: Frontend/Contrato
+- Estado: Completado
 - Archivos:
   - web/types/index.ts
   - web/lib/services/cart.ts
@@ -169,6 +183,12 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
   - Corregir campos opcionales y enum statuses.
 - Criterios de aceptacion:
   - Sin casts inseguros en flujo de cart/order.
+- Validacion:
+  - CartItem actualizado con campo variantId (opcional).
+  - OrderItem actualizado con campo variantId (opcional).
+  - Order actualizado con campos addressId (opcional) y shippingAddress (opcional).
+  - Typecheck frontend validado en Docker sin errores.
+  - Tests de integración backend pasando (4/4 tests exitosos).
 
 ## Sprint 4 - Hardening backend y observabilidad minima (P1/P2)
 
@@ -176,36 +196,69 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Prioridad: P1
 - Estimacion: M
 - Tipo: Backend
+- Estado: Completado
 - Archivos:
+  - backend/src/middleware/api-error.ts (nuevo)
   - backend/src/middleware/error-handler.ts
-  - backend/src/routes/v1/*.ts
+  - backend/src/middleware/validate.ts
+  - backend/src/middleware/auth.ts
+  - backend/src/middleware/rate-limit.ts
 - Tareas:
   - Estandarizar formato para errores de validacion, auth, negocio e internos.
   - Evitar respuestas heterogeneas por ruta.
 - Criterios de aceptacion:
   - Front puede parsear errores de forma uniforme.
+- Validacion:
+  - Errores estandarizados con envelope `success/data/message/error`.
+  - `error.code` y `error.status` disponibles para parseo uniforme en frontend.
+  - Tests de integracion backend validados en Docker:
+    - `test:integration:auth` (5/5 pass)
+    - `test:integration:contact` (2/2 pass)
+    - `test:integration:shop` (4/4 pass)
 
 ### TKT-011 - Agregar paginacion en listados admin pesados
 - Prioridad: P1
 - Estimacion: M
 - Tipo: Backend/Admin
+- Estado: Completado
 - Archivos:
   - backend/src/routes/v1/admin.ts
+  - backend/src/admin.integration.test.ts
 - Tareas:
   - page/pageSize en orders y contact-messages.
   - Responder pagination en envelope.
 - Criterios de aceptacion:
   - Listados admin no cargan todo de una vez.
+- Validacion:
+  - `GET /api/v1/admin/contact-messages?page=1&pageSize=5` responde `data` paginada + `pagination`.
+  - `GET /api/v1/admin/orders?page=1&pageSize=5` responde `data` paginada + `pagination`.
+  - Tests de integración en Docker:
+    - `test:integration:admin` (9/9 pass)
+    - `test:integration:shop` (4/4 pass)
 
 ### TKT-012 - Logging tecnico minimo en puntos criticos
 - Prioridad: P2
 - Estimacion: S
 - Tipo: Backend/Frontend
+- Estado: Completado
+- Archivos:
+  - backend/src/utils/logger.ts (nuevo)
+  - backend/src/routes/v1/auth.ts
+  - backend/src/routes/v1/shop.ts
+  - web/lib/services/http-client.ts
 - Tareas:
   - Backend: logs en errores de auth/refresh/order.
   - Frontend: trazas de fallo de request (sin exponer datos sensibles).
 - Criterios de aceptacion:
   - Debug de incidentes posible sin inspeccion manual extensa.
+- Validacion:
+  - Backend con logs tecnicos en errores de `recover-password`, `refresh`, `reset-password` y `create-order`.
+  - Frontend con trazas tecnicas en `requestJson`, `refreshAuthSession` y reintentos 401.
+  - Validado en Docker:
+    - `web npx tsc --noEmit` (ok)
+    - `backend test:integration:auth` (5/5 pass)
+    - `backend test:integration:shop` (4/4 pass)
+    - `backend test:integration:admin` (9/9 pass)
 
 ## Sprint 5 - QA integrado y salida a staging (P0)
 
