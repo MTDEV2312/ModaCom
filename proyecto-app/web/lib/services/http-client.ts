@@ -20,6 +20,11 @@ export function mergeJsonHeaders(headers?: HeadersInit) {
   };
 }
 
+function logRequestFailure(scope: string, info: Record<string, unknown>) {
+  // Log técnico mínimo para debugging sin exponer payloads sensibles.
+  console.error(`[frontend][${scope}]`, info);
+}
+
 export class ApiClientError extends Error {
   status: number;
   payload: unknown;
@@ -71,6 +76,12 @@ async function performJsonRequest(path: string, options?: RequestInit) {
 export async function requestJson<T>(path: string, options?: RequestInit): Promise<T> {
   const { response, payload } = await performJsonRequest(path, options);
   if (!response.ok) {
+    logRequestFailure('http.request', {
+      path,
+      method: options?.method ?? 'GET',
+      status: response.status,
+      message: messageFromPayload(payload, `Error HTTP ${response.status}`),
+    });
     throw new ApiClientError(
       messageFromPayload(payload, `Error HTTP ${response.status}`),
       response.status,
@@ -96,6 +107,13 @@ async function refreshAuthSession() {
   });
 
   if (!response.ok || !payload || typeof payload !== 'object' || !('data' in payload)) {
+    logRequestFailure('auth.refresh', {
+      path: '/auth/refresh',
+      method: 'POST',
+      status: response.status,
+      hasRefreshToken: Boolean(refreshToken),
+      message: messageFromPayload(payload, 'No se pudo renovar la sesión.'),
+    });
     throw new ApiClientError(messageFromPayload(payload, 'No se pudo renovar la sesión.'), response.status, payload);
   }
 
@@ -144,9 +162,19 @@ export async function requestAuthenticatedJson<T>(path: string, options?: Reques
       throw error;
     }
 
+    logRequestFailure('auth.request-401', {
+      path,
+      method: options?.method ?? 'GET',
+      status: error.status,
+    });
+
     try {
       const refreshed = await refreshAuthSession();
       if (!refreshed) {
+        logRequestFailure('auth.refresh-missing', {
+          path,
+          method: options?.method ?? 'GET',
+        });
         clearAuthSession();
         redirectToLogin();
         throw error;
@@ -158,6 +186,11 @@ export async function requestAuthenticatedJson<T>(path: string, options?: Reques
         headers: buildAuthHeaders(options, refreshedToken),
       });
     } catch (refreshError) {
+      logRequestFailure('auth.refresh-failed', {
+        path,
+        method: options?.method ?? 'GET',
+        reason: refreshError instanceof Error ? refreshError.message : 'unknown',
+      });
       clearAuthSession();
       redirectToLogin();
       throw refreshError instanceof Error ? refreshError : error;
