@@ -121,6 +121,7 @@ export interface CartItem {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  variantId?: string;
   sizeName?: string;
   colorName?: string;
   product: CartProductPreview | null;
@@ -146,18 +147,21 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  variantId?: string;
   sizeName?: string;
   colorName?: string;
 }
 
 export interface Order {
   id: string;
+  addressId?: string;
   status: 'pending' | 'confirmed' | 'cancelled';
   paymentStatus: 'pending' | 'paid' | 'failed';
   subtotal: number;
   discountTotal: number;
   shippingTotal: number;
   total: number;
+  shippingAddress?: Address;
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;
