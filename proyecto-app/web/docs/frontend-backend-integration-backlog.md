@@ -266,23 +266,52 @@ Objetivo: Completar integracion entre API Express (backend) y Next.js (web) con 
 - Prioridad: P0
 - Estimacion: L
 - Tipo: QA/Backend
+- Estado: Completado
 - Archivos:
   - backend/src/*.integration.test.ts
+  - backend/src/user-flow.integration.test.ts (nuevo)
+  - backend/src/integration-helpers.ts
+  - backend/package.json
 - Tareas:
   - Cobertura de flujo: register/login -> catalogo -> cart -> order -> orders list.
   - Cobertura de auth refresh/logout/recover/reset.
 - Criterios de aceptacion:
   - Flujos core verdes en CI local.
+- Validacion:
+  - Nueva suite `test:integration:user-flow` creada y ejecutada en Docker (2/2 pass).
+  - Corrida completa `test:integration` validada en Docker (22/22 pass).
+  - Helper de stock robustecido para evitar falsos negativos por agotamiento de variantes.
 
 ### TKT-014 - Smoke test frontend con backend real
 - Prioridad: P0
 - Estimacion: M
 - Tipo: QA/Frontend
+- Estado: Completado
+- Archivos:
+  - web/app/admin/layout.tsx
+  - web/app/mi-cuenta/layout.tsx
+  - web/app/(auth)/login/page.tsx
+  - web/app/(auth)/registro/page.tsx
 - Tareas:
   - Validar pantallas principales con NEXT_PUBLIC_API_URL configurada.
   - Confirmar guards de admin/customer y redirecciones.
 - Criterios de aceptacion:
   - Flujo de compra y admin funcional end-to-end.
+- Validacion:
+  - Entorno Docker levantado con `docker compose up -d` y `NEXT_PUBLIC_API_URL` activo.
+  - Smoke navegacion frontend (browser real):
+    - `/` carga correctamente.
+    - `/catalogo/mujer` carga correctamente.
+    - `/contacto` carga correctamente.
+  - Guards y redirecciones validados:
+    - No autenticado -> `/admin/productos` redirige a `/login`.
+    - No autenticado -> `/mi-cuenta` redirige a `/login`.
+    - Customer autenticado -> `/admin/productos` redirige a `/login`.
+    - Admin autenticado -> acceso permitido a `/admin/productos`.
+    - Admin autenticado -> `/mi-cuenta` redirige a `/login` (guard customer).
+  - Flujo auth frontend validado por UI:
+    - Registro customer exitoso en `/registro`.
+    - Login customer exitoso y retorno a home.
 
 ## Dependencias clave
 
