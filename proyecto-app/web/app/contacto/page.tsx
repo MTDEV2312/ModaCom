@@ -23,19 +23,19 @@ const contactMethods = [
   {
     icon: MapPin,
     title: 'Visítanos',
-    details: ['Calle Gran Vía 123', 'Madrid, España 28013'],
+    details: ['Av. Amazonas y Naciones Unidas', 'Quito, Ecuador'],
     action: {
       label: 'Ver en mapa',
-      href: 'https://maps.google.com/?q=Gran+Via+123+Madrid',
+      href: 'https://maps.google.com/?q=Av.+Amazonas+y+Naciones+Unidas,+Quito',
     },
   },
   {
     icon: Phone,
     title: 'Llámanos',
-    details: ['+34 900 123 456', 'Lunes a Sábado'],
+    details: ['+593 2 555 1234', 'Lunes a Sábado'],
     action: {
       label: 'Llamar ahora',
-      href: 'tel:+34900123456',
+      href: 'tel:+593225551234',
     },
   },
   {

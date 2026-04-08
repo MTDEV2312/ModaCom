@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getMyOrders } from '@/lib/services/cart';
 import type { Order } from '@/types';
+import { formatCurrency } from '@/lib/format';
 
 const statusLabel: Record<Order['status'], string> = {
   pending: 'Pendiente',
@@ -83,12 +84,12 @@ export default function OrdersPage() {
                         {item.colorName ? ` | Color: ${item.colorName}` : ''}
                       </p>
                     </div>
-                    <p className="font-medium">{item.subtotal.toFixed(2)} EUR</p>
+                    <p className="font-medium">{formatCurrency(item.subtotal)}</p>
                   </div>
                 ))}
 
                 <div className="flex justify-end border-t border-border pt-3 text-base font-semibold">
-                  Total: {order.total.toFixed(2)} EUR
+                  Total: {formatCurrency(order.total)}
                 </div>
               </CardContent>
             </Card>
