@@ -95,6 +95,12 @@ export interface RecoverPasswordData {
   email: string;
 }
 
+export interface ResetPasswordData {
+  token: string;
+  password: string;
+  confirmPassword: string;
+}
+
 // Cart and Order Types
 export interface CartProductPreview {
   id: string;

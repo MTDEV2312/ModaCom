@@ -1,4 +1,4 @@
-import type { ApiResponse, RecoverPasswordData, RegisterData, User } from '@/types';
+import type { ApiResponse, RecoverPasswordData, RegisterData, ResetPasswordData, User } from '@/types';
 import { apiNotConfiguredMessage, mergeJsonHeaders, requestAuthenticatedJson, requestJson, shouldUseBackend } from '@/lib/services/http-client';
 import { clearAuthSession, getAuthToken, getStoredUser, getRefreshToken, setAuthSession } from '@/lib/services/session';
 
@@ -64,6 +64,26 @@ export async function recoverPassword(data: RecoverPasswordData): Promise<ApiRes
       data: null,
       success: false,
       message: error instanceof Error ? error.message : 'No se pudo solicitar la recuperación.',
+    };
+  }
+}
+
+export async function resetPassword(data: ResetPasswordData): Promise<ApiResponse<null>> {
+  if (!shouldUseBackend) {
+    return { data: null, success: false, message: apiNotConfiguredMessage() };
+  }
+
+  try {
+    return await requestJson<ApiResponse<null>>('/auth/reset-password', {
+      method: 'POST',
+      headers: mergeJsonHeaders(),
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    return {
+      data: null,
+      success: false,
+      message: error instanceof Error ? error.message : 'No se pudo restablecer la contraseña.',
     };
   }
 }
