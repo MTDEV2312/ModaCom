@@ -17,6 +17,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { MapPin, Phone, Mail, Clock, Check, AlertCircle, Send } from 'lucide-react';
 import type { ContactForm } from '@/types';
+import { createContactMessage } from '@/lib/services/contact';
 
 const contactMethods = [
   {
@@ -85,8 +86,13 @@ export default function ContactPage() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const response = await createContactMessage(formData);
+    
+    if (!response.success) {
+      setError(response.message || 'No se pudo enviar el mensaje. Por favor intenta nuevamente.');
+      setIsLoading(false);
+      return;
+    }
 
     setSuccess(true);
     setIsLoading(false);
