@@ -23,6 +23,21 @@ export const adminV1Router = Router();
 
 const VALID_CATEGORY_SLUGS = ["hombre", "mujer", "ninos"] as const;
 
+function parsePagination(query: any) {
+  const page = Math.max(1, Number(query?.page ?? 1));
+  const pageSize = Math.max(1, Math.min(100, Number(query?.pageSize ?? 20)));
+  return { page, pageSize, offset: (page - 1) * pageSize };
+}
+
+function buildPagination(page: number, pageSize: number, totalItems: number) {
+  return {
+    page,
+    pageSize,
+    totalItems,
+    totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+  };
+}
+
 function isCategorySlug(value: string): value is (typeof VALID_CATEGORY_SLUGS)[number] {
   return VALID_CATEGORY_SLUGS.includes(value as (typeof VALID_CATEGORY_SLUGS)[number]);
 }
@@ -854,21 +869,26 @@ adminV1Router.delete("/admin/products/:id", requireAuth, requireAdmin, async (re
   }
 });
 
-adminV1Router.get("/admin/contact-messages", requireAuth, requireAdmin, async (_req: any, res: any) => {
+adminV1Router.get("/admin/contact-messages", requireAuth, requireAdmin, async (req: any, res: any) => {
   try {
-    const rows = await ContactMessage.findAll({
+    const { page, pageSize, offset } = parsePagination(req.query);
+    const result = await ContactMessage.findAndCountAll({
       order: [["createdAt", "DESC"]],
+      offset,
+      limit: pageSize,
     });
 
     return res.status(200).json({
       success: true,
-      data: rows.map((row) => mapContactMessage(row)),
+      data: result.rows.map((row) => mapContactMessage(row)),
+      pagination: buildPagination(page, pageSize, result.count),
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       data: [],
       message: error instanceof Error ? error.message : "Error al listar mensajes de contacto",
+      pagination: buildPagination(1, 20, 0),
     });
   }
 });
@@ -905,25 +925,31 @@ adminV1Router.patch(
   }
 });
 
-adminV1Router.get("/admin/orders", requireAuth, requireAdmin, async (_req: any, res: any) => {
+adminV1Router.get("/admin/orders", requireAuth, requireAdmin, async (req: any, res: any) => {
   try {
-    const rows = await Order.findAll({
+    const { page, pageSize, offset } = parsePagination(req.query);
+    const result = await Order.findAndCountAll({
       include: [
         { model: OrderItem, as: "items" },
         { model: Address, as: "address" },
       ],
+      distinct: true,
       order: [["createdAt", "DESC"]],
+      offset,
+      limit: pageSize,
     });
 
     return res.status(200).json({
       success: true,
-      data: rows.map((row) => mapAdminOrder(row as Order & { items?: OrderItem[] })),
+      data: result.rows.map((row) => mapAdminOrder(row as Order & { items?: OrderItem[] })),
+      pagination: buildPagination(page, pageSize, result.count),
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
       data: [],
       message: error instanceof Error ? error.message : "Error al listar pedidos",
+      pagination: buildPagination(1, 20, 0),
     });
   }
 });

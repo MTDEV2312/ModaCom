@@ -306,4 +306,66 @@ describe("Admin integration", () => {
     assert.ok(match);
     assert.equal(match?.providerMessageId, providerMessageId);
   });
+
+  it("should paginate admin contact messages", async () => {
+    const adminToken = await loginAdmin(ctx.baseUrl);
+
+    const response = await fetch(`${ctx.baseUrl}/api/v1/admin/contact-messages?page=1&pageSize=5`, {
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+      },
+    });
+
+    assert.equal(response.status, 200);
+
+    const payload = (await response.json()) as {
+      success: boolean;
+      data: Array<{ id: string }>;
+      pagination: {
+        page: number;
+        pageSize: number;
+        totalItems: number;
+        totalPages: number;
+      };
+    };
+
+    assert.equal(payload.success, true);
+    assert.ok(Array.isArray(payload.data));
+    assert.equal(payload.pagination.page, 1);
+    assert.equal(payload.pagination.pageSize, 5);
+    assert.ok(payload.pagination.totalItems >= payload.data.length);
+    assert.ok(payload.pagination.totalPages >= 1);
+    assert.ok(payload.data.length <= 5);
+  });
+
+  it("should paginate admin orders", async () => {
+    const adminToken = await loginAdmin(ctx.baseUrl);
+
+    const response = await fetch(`${ctx.baseUrl}/api/v1/admin/orders?page=1&pageSize=5`, {
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+      },
+    });
+
+    assert.equal(response.status, 200);
+
+    const payload = (await response.json()) as {
+      success: boolean;
+      data: Array<{ id: string }>;
+      pagination: {
+        page: number;
+        pageSize: number;
+        totalItems: number;
+        totalPages: number;
+      };
+    };
+
+    assert.equal(payload.success, true);
+    assert.ok(Array.isArray(payload.data));
+    assert.equal(payload.pagination.page, 1);
+    assert.equal(payload.pagination.pageSize, 5);
+    assert.ok(payload.pagination.totalItems >= payload.data.length);
+    assert.ok(payload.pagination.totalPages >= 1);
+    assert.ok(payload.data.length <= 5);
+  });
 });
