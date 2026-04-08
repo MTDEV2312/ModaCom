@@ -282,7 +282,7 @@ export const mockOffers: Offer[] = [
   {
     id: 'offer_4',
     title: 'Envío Gratis',
-    description: 'Envío gratis en compras superiores a 75 euros',
+    description: 'Envío gratis en compras superiores a $75',
     discountPercentage: 0,
     image: '/images/offers/free-shipping.jpg',
     validFrom: '2024-01-01T00:00:00Z',
