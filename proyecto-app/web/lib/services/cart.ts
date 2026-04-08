@@ -1,8 +1,22 @@
 import type { Address, ApiResponse, Cart, Order } from '@/types';
 import { getAuthHeader } from '@/lib/services/auth';
-import { apiNotConfiguredMessage, mergeJsonHeaders, requestAuthenticatedJson, requestJson, shouldUseBackend } from '@/lib/services/http-client';
+import { apiNotConfiguredMessage, mergeJsonHeaders, requestAuthenticatedJson, requestJson, shouldUseBackend, ApiClientError } from '@/lib/services/http-client';
 
 function errorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiClientError) {
+    switch (error.status) {
+      case 401:
+        return 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+      case 404:
+        return 'El producto o carrito no fue encontrado.';
+      case 409:
+        return error.message || 'Stock insuficiente para completar esta acción.';
+      case 500:
+        return 'Error del servidor. Por favor intenta más tarde.';
+      default:
+        return error.message || fallback;
+    }
+  }
   return error instanceof Error ? error.message : fallback;
 }
 

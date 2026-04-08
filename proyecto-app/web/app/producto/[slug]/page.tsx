@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Heart, ShoppingBag, Truck, RefreshCw, Shield, Minus, Plus, Check } from 'lucide-react';
+import { Heart, ShoppingBag, Truck, RefreshCw, Shield, Minus, Plus, Check, AlertCircle } from 'lucide-react';
 import { getProductBySlug } from '@/lib/services/products';
 import { addToCart } from '@/lib/services/cart';
 import type { Product } from '@/types';
@@ -35,6 +35,7 @@ export default function ProductDetailPage() {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -56,9 +57,11 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = async () => {
     if (!product || !selectedSize || !selectedColor) {
+      setCartError('Por favor selecciona un tamaño y color.');
       return;
     }
 
+    setCartError(null);
     setIsAdding(true);
     const response = await addToCart({
       productId: product.id,
@@ -69,6 +72,7 @@ export default function ProductDetailPage() {
     setIsAdding(false);
 
     if (!response.success) {
+      setCartError(response.message || 'No se pudo agregar el producto al carrito.');
       return;
     }
 
@@ -351,6 +355,20 @@ export default function ProductDetailPage() {
                   />
                 </Button>
               </div>
+
+              {cartError && (
+                <div
+                  className="mt-4 flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+                  role="alert"
+                  aria-live="polite"
+                >
+                  <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <p className="font-medium">No se pudo agregar al carrito</p>
+                    <p className="mt-1 text-sm">{cartError}</p>
+                  </div>
+                </div>
+              )}
 
               {/* Features */}
               <div className="mt-10 grid gap-4 border-t border-border pt-8">

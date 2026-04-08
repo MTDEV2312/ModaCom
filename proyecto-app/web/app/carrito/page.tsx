@@ -16,13 +16,14 @@ import { clearAuthSession, ensureCustomerUser } from '@/lib/services/auth';
 import { getCart, updateCartItem, removeCartItem, clearCart, createOrderFromCart } from '@/lib/services/cart';
 import { getMyAddresses } from '@/lib/services/addresses';
 import type { Cart } from '@/types';
+import { AlertCircle, CheckCircle, InfoIcon } from 'lucide-react';
 
 export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState<Cart | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<string>('');
+  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
@@ -95,9 +96,9 @@ export default function CartPage() {
     const response = await updateCartItem(itemId, quantity);
     if (response.success) {
       setCart(response.data);
-      setFeedback('Cantidad actualizada.');
+      setFeedback({ message: 'Cantidad actualizada.', type: 'success' });
     } else {
-      setFeedback(response.message || 'No se pudo actualizar la cantidad.');
+      setFeedback({ message: response.message || 'No se pudo actualizar la cantidad.', type: 'error' });
     }
   };
 
@@ -105,9 +106,9 @@ export default function CartPage() {
     const response = await removeCartItem(itemId);
     if (response.success) {
       setCart(response.data);
-      setFeedback('Producto eliminado del carrito.');
+      setFeedback({ message: 'Producto eliminado del carrito.', type: 'success' });
     } else {
-      setFeedback(response.message || 'No se pudo eliminar el producto.');
+      setFeedback({ message: response.message || 'No se pudo eliminar el producto.', type: 'error' });
     }
   };
 
@@ -116,15 +117,15 @@ export default function CartPage() {
     if (response.success) {
       const refreshed = await getCart();
       if (refreshed.success) setCart(refreshed.data);
-      setFeedback('Carrito vaciado correctamente.');
+      setFeedback({ message: 'Carrito vaciado correctamente.', type: 'success' });
     } else {
-      setFeedback(response.message || 'No se pudo vaciar el carrito.');
+      setFeedback({ message: response.message || 'No se pudo vaciar el carrito.', type: 'error' });
     }
   };
 
   const handleCheckout = async () => {
     if (!selectedAddressId) {
-      setFeedback('Seleccioná una dirección para continuar con el pedido.');
+      setFeedback({ message: 'Seleccioná una dirección para continuar con el pedido.', type: 'info' });
       return;
     }
 
@@ -135,11 +136,11 @@ export default function CartPage() {
     if (response.success) {
       const refreshed = await getCart();
       if (refreshed.success) setCart(refreshed.data);
-      setFeedback('Pedido creado exitosamente. Podés verlo en Mi Cuenta > Pedidos.');
+      setFeedback({ message: 'Pedido creado exitosamente. Podés verlo en Mi Cuenta > Pedidos.', type: 'success' });
       return;
     }
 
-    setFeedback(response.message || 'No se pudo crear el pedido.');
+    setFeedback({ message: response.message || 'No se pudo crear el pedido.', type: 'error' });
   };
 
   if (isChecking) {
@@ -166,7 +167,26 @@ export default function CartPage() {
           </div>
 
           {feedback ? (
-            <p className="mb-4 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">{feedback}</p>
+            <div
+              className={`mb-4 flex items-start gap-3 rounded-md p-4 ${
+                feedback.type === 'error'
+                  ? 'border border-destructive/30 bg-destructive/10 text-destructive'
+                  : feedback.type === 'success'
+                    ? 'border border-green-200/50 bg-green-500/10 text-green-700'
+                    : 'border border-blue-200/50 bg-blue-500/10 text-blue-700'
+              }`}
+              role={feedback.type === 'error' ? 'alert' : 'status'}
+              aria-live="polite"
+            >
+              {feedback.type === 'error' ? (
+                <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+              ) : feedback.type === 'success' ? (
+                <CheckCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+              ) : (
+                <InfoIcon className="h-5 w-5 shrink-0" aria-hidden="true" />
+              )}
+              <p className="text-sm">{feedback.message}</p>
+            </div>
           ) : null}
 
           {isLoading ? (
