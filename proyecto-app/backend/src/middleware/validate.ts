@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError, ZodTypeAny } from "zod";
+import { sendApiError } from "./api-error";
 
 function zodMessage(error: ZodError) {
   const first = error.issues[0];
@@ -11,14 +12,20 @@ function zodMessage(error: ZodError) {
   return `${path}${first.message}`;
 }
 
+function zodDetails(error: ZodError) {
+  return error.issues.map((issue) => ({
+    path: issue.path.join("."),
+    message: issue.message,
+    code: issue.code,
+  }));
+}
+
 function validatePart(schema: ZodTypeAny, pick: (req: Request) => unknown, assign: (req: Request, value: unknown) => void) {
   return (req: Request, res: Response, next: NextFunction) => {
     const parsed = schema.safeParse(pick(req));
     if (!parsed.success) {
-      return res.status(400).json({
-        success: false,
-        data: null,
-        message: zodMessage(parsed.error),
+      return sendApiError(res, 400, "VALIDATION_ERROR", zodMessage(parsed.error), {
+        details: zodDetails(parsed.error),
       });
     }
 

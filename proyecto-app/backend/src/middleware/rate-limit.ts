@@ -1,3 +1,5 @@
+import { sendApiError } from "./api-error";
+
 type Bucket = {
   count: number;
   windowStart: number;
@@ -32,11 +34,7 @@ export function createRateLimit(options: RateLimitOptions) {
     }
 
     if (bucket.count >= options.max) {
-      return res.status(429).json({
-        success: false,
-        data: null,
-        message: options.message,
-      });
+      return sendApiError(res, 429, "RATE_LIMITED", options.message);
     }
 
     bucket.count += 1;
