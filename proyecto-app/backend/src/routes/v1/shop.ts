@@ -5,6 +5,7 @@ import { Address, Cart, CartItem, Category, Order, OrderItem, Product, ProductIm
 import { requireAuth } from "../../middleware/auth";
 import { validateBody, validateParams } from "../../middleware/validate";
 import { cartAddItemSchema, cartUpdateItemSchema, itemIdParamSchema, orderCreateSchema } from "../../validation/schemas";
+import { logTechnicalError } from "../../utils/logger";
 
 export const shopV1Router = Router();
 
@@ -512,6 +513,10 @@ shopV1Router.post("/orders", requireAuth, validateBody(orderCreateSchema), async
     });
   } catch (error) {
     await transaction.rollback();
+    logTechnicalError("shop.create-order", error, {
+      userId: req.auth?.userId,
+      addressId: req.body?.addressId,
+    });
     return res.status(500).json({
       success: false,
       data: null,

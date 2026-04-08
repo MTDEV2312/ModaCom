@@ -10,6 +10,7 @@ import { env } from "../../config/env";
 import { isEmailDeliveryConfigured, sendPasswordResetEmail } from "../../services/email";
 import { requireAuth, signAccessToken, signRefreshToken, verifyRefreshToken } from "../../middleware/auth";
 import { validateBody } from "../../middleware/validate";
+import { logTechnicalError } from "../../utils/logger";
 import {
   authLoginSchema,
   authLogoutSchema,
@@ -279,6 +280,10 @@ authV1Router.post("/auth/recover-password", validateBody(authRecoverSchema), asy
       message: "Si la cuenta existe, enviaremos un enlace de recuperación",
     });
   } catch (error) {
+    logTechnicalError("auth.recover-password", error, {
+      hasEmail: Boolean(req.body?.email),
+      ip: getRequestIp(req),
+    });
     return res.status(500).json({
       success: false,
       data: null,
@@ -324,7 +329,10 @@ authV1Router.post("/auth/refresh", validateBody(authRefreshSchema), async (req: 
       },
       message: "Token renovado",
     });
-  } catch (_error) {
+  } catch (error) {
+    logTechnicalError("auth.refresh", error, {
+      hasRefreshToken: Boolean(req.body?.refreshToken),
+    });
     return res.status(401).json({ success: false, data: null, message: "Refresh token inválido o expirado" });
   }
 });
@@ -402,6 +410,10 @@ authV1Router.post("/auth/reset-password", validateBody(authResetSchema), async (
 
     return res.status(200).json({ success: true, data: null, message: "Contraseña actualizada exitosamente" });
   } catch (error) {
+    logTechnicalError("auth.reset-password", error, {
+      hasToken: Boolean(req.body?.token),
+      ip: getRequestIp(req),
+    });
     return res.status(500).json({ success: false, data: null, message: error instanceof Error ? error.message : "Error al restablecer contraseña" });
   }
 });
