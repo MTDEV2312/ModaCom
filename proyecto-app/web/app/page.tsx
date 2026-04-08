@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight, Truck, RefreshCw, Shield, Clock } from 'lucide-react';
 import { getFeaturedProducts, getNewArrivals, getCategories } from '@/lib/services/products';
 import { getOffers } from '@/lib/services/offers';
+import { formatCurrency } from '@/lib/format';
 
 export default async function HomePage() {
   const [featuredResponse, newArrivalsResponse, categoriesResponse, offersResponse] = await Promise.all([
@@ -72,7 +73,7 @@ export default async function HomePage() {
                 {/* Floating badge */}
                 <div className="absolute -bottom-4 -left-4 rounded-xl bg-card p-4 shadow-lg sm:-left-8">
                   <p className="text-sm font-medium text-muted-foreground">Desde</p>
-                  <p className="text-2xl font-semibold text-foreground">24,99 €</p>
+                  <p className="text-2xl font-semibold text-foreground">{formatCurrency(24.99)}</p>
                 </div>
               </div>
             </div>
@@ -84,7 +85,7 @@ export default async function HomePage() {
           <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
             <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
               {[
-                { icon: Truck, title: 'Envío Gratis', subtitle: 'En pedidos +75€' },
+                { icon: Truck, title: 'Envío Gratis', subtitle: 'En pedidos +$75' },
                 { icon: RefreshCw, title: 'Devolución Fácil', subtitle: '30 días para devolver' },
                 { icon: Shield, title: 'Pago Seguro', subtitle: 'Transacción 100% segura' },
                 { icon: Clock, title: 'Soporte 24/7', subtitle: 'Atención personalizada' },
