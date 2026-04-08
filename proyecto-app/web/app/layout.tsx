@@ -17,25 +17,25 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: {
-    default: 'MODA | Tienda de Moda Familiar',
+    default: 'MODA | Moda en Quito, Ecuador',
     template: '%s | MODA',
   },
-  description: 'Descubre las últimas tendencias en moda para hombre, mujer y niños. Calidad premium y estilo atemporal para toda la familia.',
-  keywords: ['moda', 'ropa', 'hombre', 'mujer', 'niños', 'tienda online', 'fashion', 'tendencias'],
+  description: 'Descubre las últimas tendencias en moda para hombre, mujer y niños en Quito, Ecuador. Calidad premium y estilo atemporal para toda la familia.',
+  keywords: ['moda', 'ropa', 'hombre', 'mujer', 'niños', 'tienda online', 'fashion', 'tendencias', 'Quito', 'Ecuador', 'USD'],
   authors: [{ name: 'MODA' }],
   creator: 'MODA',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   openGraph: {
     type: 'website',
-    locale: 'es_ES',
+    locale: 'es_EC',
     siteName: 'MODA',
-    title: 'MODA | Tienda de Moda Familiar',
-    description: 'Descubre las últimas tendencias en moda para hombre, mujer y niños.',
+    title: 'MODA | Moda en Quito, Ecuador',
+    description: 'Descubre las últimas tendencias en moda para hombre, mujer y niños en Quito, Ecuador.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MODA | Tienda de Moda Familiar',
-    description: 'Descubre las últimas tendencias en moda para hombre, mujer y niños.',
+    title: 'MODA | Moda en Quito, Ecuador',
+    description: 'Descubre las últimas tendencias en moda para hombre, mujer y niños en Quito, Ecuador.',
   },
   robots: {
     index: true,

@@ -20,7 +20,7 @@ const emptyForm: AddressInput = {
   city: '',
   state: '',
   postalCode: '',
-  country: 'España',
+  country: 'Ecuador',
   isDefault: false,
 };
 
