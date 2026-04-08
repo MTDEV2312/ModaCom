@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test:integration": "tsx --test --test-concurrency=1 src/*.integration.test.ts",
+    "test:integration:user-flow": "tsx --test --test-concurrency=1 src/user-flow.integration.test.ts",
     "test:integration:auth": "tsx --test --test-concurrency=1 src/auth.integration.test.ts",
     "test:integration:admin": "tsx --test --test-concurrency=1 src/admin.integration.test.ts",
     "test:integration:shop": "tsx --test --test-concurrency=1 src/shop.integration.test.ts",

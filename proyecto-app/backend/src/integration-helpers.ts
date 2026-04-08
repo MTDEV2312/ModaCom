@@ -172,5 +172,53 @@ export async function getFirstVariantWithStock(baseUrl: string) {
     }
   }
 
-  assert.fail("No se encontro ninguna variante con stock > 0");
+  const adminToken = await loginAdmin(baseUrl);
+  const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  const createResponse = await fetch(`${baseUrl}/api/v1/admin/products`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${adminToken}`,
+    },
+    body: JSON.stringify({
+      name: `Producto Stock Test ${suffix}`,
+      description: "Producto auxiliar para pruebas de integración",
+      price: 99.9,
+      categorySlug: "hombre",
+      stock: 50,
+      images: ["/images/placeholder-product.jpg"],
+      variants: [
+        {
+          sizeName: "M",
+          colorName: "Negro",
+          stock: 50,
+          isActive: true,
+        },
+      ],
+    }),
+  });
+
+  assert.equal(createResponse.status, 201);
+
+  const createPayload = (await createResponse.json()) as {
+    success: boolean;
+    data: {
+      id: string;
+      variants: Array<{
+        id: string;
+        sizeName: string;
+        colorName: string;
+        stock: number;
+      }>;
+    };
+  };
+
+  assert.equal(createPayload.success, true);
+  const createdVariant = createPayload.data.variants.find((entry) => entry.stock > 0);
+  assert.ok(createdVariant);
+
+  return {
+    productId: createPayload.data.id,
+    variant: createdVariant,
+  };
 }
