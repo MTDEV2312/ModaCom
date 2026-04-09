@@ -1,6 +1,8 @@
 import { clearAuthSession, getAuthToken, getRefreshToken, getStoredUser, setAuthSession } from '@/lib/services/session';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const SERVER_API_BASE_URL = process.env.INTERNAL_API_URL || PUBLIC_API_BASE_URL;
+const API_BASE_URL = typeof window === 'undefined' ? SERVER_API_BASE_URL : PUBLIC_API_BASE_URL;
 const V1_BASE = `${API_BASE_URL.replace(/\/$/, '')}/api/v1`;
 
 export const shouldUseBackend = Boolean(API_BASE_URL);
