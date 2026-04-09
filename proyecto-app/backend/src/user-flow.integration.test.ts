@@ -2,6 +2,7 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { TestServer } from "./integration-helpers";
 import { createAddressForUser, getFirstVariantWithStock, registerAndLoginCustomer, startTestServer, stopTestServer } from "./integration-helpers";
+import { setEmailSenderForTests } from "./services/email";
 
 let ctx: TestServer;
 
@@ -99,6 +100,24 @@ describe("User flow integration", () => {
 
   it("should complete auth lifecycle: refresh/logout/recover/reset", async () => {
     const session = await registerAndLoginCustomer(ctx.baseUrl, "integration-user-auth-lifecycle");
+    let resetTokenFromEmail: string | undefined;
+
+    setEmailSenderForTests(async (payload) => {
+      const resetUrlLine = payload.text.split("\n").find((line) => line.includes("token="));
+      if (resetUrlLine) {
+        const urlMatch = resetUrlLine.match(/https?:\/\/\S+/);
+        if (urlMatch) {
+          const token = new URL(urlMatch[0]).searchParams.get("token");
+          if (token) {
+            resetTokenFromEmail = token;
+          }
+        }
+      }
+
+      return { id: `integration-user-flow-reset-${Date.now()}` };
+    });
+
+    try {
 
     const refreshResponse = await fetch(`${ctx.baseUrl}/api/v1/auth/refresh`, {
       method: "POST",
@@ -162,13 +181,11 @@ describe("User flow integration", () => {
 
     const recoverPayload = (await recoverResponse.json()) as {
       success: boolean;
-      data: {
-        resetToken?: string;
-      } | null;
+      data: null;
     };
 
     assert.equal(recoverPayload.success, true);
-    const resetToken = recoverPayload.data?.resetToken;
+    const resetToken = resetTokenFromEmail;
     assert.ok(resetToken);
 
     const resetResponse = await fetch(`${ctx.baseUrl}/api/v1/auth/reset-password`, {
@@ -210,5 +227,8 @@ describe("User flow integration", () => {
     });
 
     assert.equal(newPasswordLoginResponse.status, 200);
+    } finally {
+      setEmailSenderForTests(null);
+    }
   });
 });

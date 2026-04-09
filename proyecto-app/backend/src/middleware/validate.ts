@@ -1,4 +1,3 @@
-import type { NextFunction, Request, Response } from "express";
 import { ZodError, ZodTypeAny } from "zod";
 import { sendApiError } from "./api-error";
 
@@ -20,8 +19,8 @@ function zodDetails(error: ZodError) {
   }));
 }
 
-function validatePart(schema: ZodTypeAny, pick: (req: Request) => unknown, assign: (req: Request, value: unknown) => void) {
-  return (req: Request, res: Response, next: NextFunction) => {
+function validatePart(schema: ZodTypeAny, pick: (req: any) => unknown, assign: (req: any, value: unknown) => void) {
+  return (req: any, res: any, next: any) => {
     const parsed = schema.safeParse(pick(req));
     if (!parsed.success) {
       return sendApiError(res, 400, "VALIDATION_ERROR", zodMessage(parsed.error), {
@@ -42,12 +41,12 @@ export function validateBody(schema: ZodTypeAny) {
 
 export function validateQuery(schema: ZodTypeAny) {
   return validatePart(schema, (req) => req.query, (req, value) => {
-    req.query = value as Request["query"];
+    req.query = value;
   });
 }
 
 export function validateParams(schema: ZodTypeAny) {
   return validatePart(schema, (req) => req.params, (req, value) => {
-    req.params = value as Request["params"];
+    req.params = value;
   });
 }

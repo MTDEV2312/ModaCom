@@ -37,11 +37,11 @@ app.use("/api/v1/auth", authRateLimit);
 app.use("/api/v1/contact/messages", contactRateLimit);
 
 app.get("/api/openapi.json", (_req: Request, res: Response) => {
-  res.sendFile(path.join(docsDir, "openapi.json"));
+  (res as any).sendFile(path.join(docsDir, "openapi.json"));
 });
 
 app.get("/api/docs", (_req: Request, res: Response) => {
-  res.sendFile(path.join(docsDir, "api-interactive.html"));
+  (res as any).sendFile(path.join(docsDir, "api-interactive.html"));
 });
 
 app.use("/api", healthRouter);

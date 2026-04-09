@@ -2,6 +2,7 @@ import { after, before, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import type { TestServer } from "./integration-helpers";
 import { registerAndLoginCustomer, startTestServer, stopTestServer } from "./integration-helpers";
+import { setEmailSenderForTests } from "./services/email";
 
 let ctx: TestServer;
 
@@ -103,6 +104,24 @@ describe("Auth integration", () => {
 
   it("should reset password and invalidate previous credentials", async () => {
     const email = `integration-reset-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
+    let resetTokenFromEmail: string | undefined;
+
+    setEmailSenderForTests(async (payload) => {
+      const resetUrlLine = payload.text.split("\n").find((line) => line.includes("token="));
+      if (resetUrlLine) {
+        const urlMatch = resetUrlLine.match(/https?:\/\/\S+/);
+        if (urlMatch) {
+          const token = new URL(urlMatch[0]).searchParams.get("token");
+          if (token) {
+            resetTokenFromEmail = token;
+          }
+        }
+      }
+
+      return { id: `integration-reset-${Date.now()}` };
+    });
+
+    try {
 
     const registerResponse = await fetch(`${ctx.baseUrl}/api/v1/auth/register`, {
       method: "POST",
@@ -134,13 +153,11 @@ describe("Auth integration", () => {
     assert.equal(recoverResponse.status, 200);
     const recoverPayload = (await recoverResponse.json()) as {
       success: boolean;
-      data: {
-        resetToken?: string;
-      } | null;
+      data: null;
     };
 
     assert.equal(recoverPayload.success, true);
-    const resetToken = recoverPayload.data?.resetToken;
+    const resetToken = resetTokenFromEmail;
     assert.ok(resetToken);
 
     const resetResponse = await fetch(`${ctx.baseUrl}/api/v1/auth/reset-password`, {
@@ -196,6 +213,9 @@ describe("Auth integration", () => {
     });
 
     assert.equal(resetReuseResponse.status, 400);
+    } finally {
+      setEmailSenderForTests(null);
+    }
   });
 
   it("should enforce recover-password dedicated rate limit", async () => {
