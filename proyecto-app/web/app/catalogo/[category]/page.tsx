@@ -14,6 +14,10 @@ interface CatalogPageProps {
 }
 
 const categoryTitles: Record<string, { title: string; description: string }> = {
+  todos: {
+    title: 'Todos los productos',
+    description: 'Explora todo el catálogo en un solo lugar con búsqueda y filtros globales.',
+  },
   hombre: {
     title: 'Colección Hombre',
     description: 'Descubre nuestra selección de moda masculina. Desde looks casuales hasta elegancia formal.',
@@ -50,6 +54,7 @@ export async function generateMetadata({ params }: CatalogPageProps): Promise<Me
 
 export async function generateStaticParams() {
   return [
+    { category: 'todos' },
     { category: 'hombre' },
     { category: 'mujer' },
     { category: 'ninos' },
@@ -61,7 +66,7 @@ export default async function CatalogPage({ params, searchParams }: CatalogPageP
   const resolvedSearchParams = await searchParams;
   
   // Validate category
-  const validCategories = ['hombre', 'mujer', 'ninos'];
+  const validCategories = ['todos', 'hombre', 'mujer', 'ninos'];
   if (!validCategories.includes(category)) {
     notFound();
   }
@@ -70,7 +75,7 @@ export default async function CatalogPage({ params, searchParams }: CatalogPageP
 
   // Build filters from search params
   const filters: ProductFilters = {
-    category: category as Category['slug'],
+    ...(category !== 'todos' ? { category: category as Category['slug'] } : {}),
     search: typeof resolvedSearchParams.search === 'string' ? resolvedSearchParams.search : undefined,
     sortBy: typeof resolvedSearchParams.sortBy === 'string' ? resolvedSearchParams.sortBy as ProductFilters['sortBy'] : undefined,
     sizes: typeof resolvedSearchParams.sizes === 'string' ? resolvedSearchParams.sizes.split(',') : undefined,
