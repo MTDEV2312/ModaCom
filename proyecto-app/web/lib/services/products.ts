@@ -2,6 +2,11 @@ import type { Product, ProductFilters, PaginatedResponse, ApiResponse, Category 
 import { getAuthHeader } from '@/lib/services/auth';
 import { apiNotConfiguredMessage, requestAuthenticatedJson, requestJson, shouldUseBackend, mergeJsonHeaders } from '@/lib/services/http-client';
 
+interface UploadedProductImage {
+  url: string;
+  path: string;
+}
+
 export async function getProducts(
   filters?: ProductFilters,
   page = 1,
@@ -187,6 +192,7 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
         stock: updates.stock,
         featured: updates.featured,
         isNew: updates.isNew,
+        images: updates.images,
       }),
     });
   } catch (error) {
@@ -194,6 +200,41 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
       data: null as unknown as Product,
       success: false,
       message: error instanceof Error ? error.message : 'No se pudo actualizar el producto.',
+    };
+  }
+}
+
+export async function uploadProductImage(file: File): Promise<ApiResponse<UploadedProductImage>> {
+  if (!shouldUseBackend) {
+    return {
+      data: null as unknown as UploadedProductImage,
+      success: false,
+      message: apiNotConfiguredMessage(),
+    };
+  }
+
+  try {
+    const data = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result ?? ''));
+      reader.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada.'));
+      reader.readAsDataURL(file);
+    });
+
+    return await requestAuthenticatedJson<ApiResponse<UploadedProductImage>>('/admin/uploads/product-image', {
+      method: 'POST',
+      headers: mergeJsonHeaders(getAuthHeader()),
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type,
+        data,
+      }),
+    });
+  } catch (error) {
+    return {
+      data: null as unknown as UploadedProductImage,
+      success: false,
+      message: error instanceof Error ? error.message : 'No se pudo subir la imagen.',
     };
   }
 }

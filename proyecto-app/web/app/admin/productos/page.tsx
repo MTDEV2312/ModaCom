@@ -53,7 +53,7 @@ import {
   X,
   Package,
 } from 'lucide-react';
-import { createProduct, deleteProduct, getCategories, getProducts, updateProduct } from '@/lib/services/products';
+import { createProduct, deleteProduct, getCategories, getProducts, updateProduct, uploadProductImage } from '@/lib/services/products';
 import type { Product, Category } from '@/types';
 
 export default function AdminProductsPage() {
@@ -74,6 +74,7 @@ export default function AdminProductsPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    imageUrl: '',
     price: '',
     originalPrice: '',
     category: '',
@@ -82,6 +83,7 @@ export default function AdminProductsPage() {
     isNew: false,
   });
   const [formLoading, setFormLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -134,7 +136,7 @@ export default function AdminProductsPage() {
       description: formData.description,
       price: Number(formData.price),
       originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
-      images: ['/images/placeholder-product.jpg'],
+      images: [formData.imageUrl || '/images/placeholder-product.jpg'],
       category,
       sizes: [
         { id: 's', name: 'S', available: true },
@@ -189,6 +191,7 @@ export default function AdminProductsPage() {
       price: Number(formData.price),
       originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
       category,
+      images: [formData.imageUrl || '/images/placeholder-product.jpg'],
       stock: Number(formData.stock || 0),
       featured: formData.featured,
       isNew: formData.isNew,
@@ -228,6 +231,7 @@ export default function AdminProductsPage() {
     setFormData({
       name: product.name,
       description: product.description,
+      imageUrl: product.images[0] || '',
       price: product.price.toString(),
       originalPrice: product.originalPrice?.toString() || '',
       category: product.category.slug,
@@ -252,6 +256,7 @@ export default function AdminProductsPage() {
     setFormData({
       name: '',
       description: '',
+      imageUrl: '',
       price: '',
       originalPrice: '',
       category: '',
@@ -261,6 +266,25 @@ export default function AdminProductsPage() {
     });
     setFormError(null);
     setFormLoading(false);
+  };
+
+  const handleImageFileChange = async (file: File | null) => {
+    if (!file) {
+      return;
+    }
+
+    setFormError(null);
+    setImageUploading(true);
+
+    const result = await uploadProductImage(file);
+    if (!result.success) {
+      setImageUploading(false);
+      setFormError(result.message || 'No se pudo subir la imagen');
+      return;
+    }
+
+    setFormData((prev) => ({ ...prev, imageUrl: result.data.url }));
+    setImageUploading(false);
   };
 
   return (
@@ -484,6 +508,24 @@ export default function AdminProductsPage() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="create-image-url">Imagen del producto (URL)</Label>
+              <Input
+                id="create-image-url"
+                value={formData.imageUrl}
+                onChange={(e) => setFormData((prev) => ({ ...prev, imageUrl: e.target.value }))}
+                placeholder="https://..."
+                disabled={formLoading || formSuccess || imageUploading}
+              />
+              <Input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                onChange={(e) => void handleImageFileChange(e.target.files?.[0] ?? null)}
+                disabled={formLoading || formSuccess || imageUploading}
+              />
+              {imageUploading && <p className="text-xs text-muted-foreground">Subiendo imagen...</p>}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="create-price">Precio *</Label>
@@ -581,7 +623,7 @@ export default function AdminProductsPage() {
             >
               Cancelar
             </Button>
-            <Button onClick={handleCreate} disabled={formLoading || formSuccess}>
+            <Button onClick={handleCreate} disabled={formLoading || formSuccess || imageUploading}>
               {formLoading ? (
                 <>
                   <Spinner className="mr-2" />
@@ -638,6 +680,24 @@ export default function AdminProductsPage() {
                 rows={3}
                 disabled={formLoading || formSuccess}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-image-url">Imagen del producto (URL)</Label>
+              <Input
+                id="edit-image-url"
+                value={formData.imageUrl}
+                onChange={(e) => setFormData((prev) => ({ ...prev, imageUrl: e.target.value }))}
+                placeholder="https://..."
+                disabled={formLoading || formSuccess || imageUploading}
+              />
+              <Input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                onChange={(e) => void handleImageFileChange(e.target.files?.[0] ?? null)}
+                disabled={formLoading || formSuccess || imageUploading}
+              />
+              {imageUploading && <p className="text-xs text-muted-foreground">Subiendo imagen...</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -738,7 +798,7 @@ export default function AdminProductsPage() {
             >
               Cancelar
             </Button>
-            <Button onClick={handleEdit} disabled={formLoading || formSuccess}>
+            <Button onClick={handleEdit} disabled={formLoading || formSuccess || imageUploading}>
               {formLoading ? (
                 <>
                   <Spinner className="mr-2" />
