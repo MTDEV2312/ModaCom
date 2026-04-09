@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { addToCart } from '@/lib/services/cart';
+import { isProductFavorite, toggleProductFavorite } from '@/lib/services/favorites';
 import { Heart, ShoppingBag, Eye } from 'lucide-react';
 import type { Product } from '@/types';
 
@@ -21,6 +22,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+
+  useEffect(() => {
+    setIsWishlisted(isProductFavorite(product.id));
+  }, [product.id]);
 
   const discountPercentage = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -49,7 +54,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Image Container */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+      <div className="relative aspect-3/4 overflow-hidden bg-muted">
         <Link href={productUrl} aria-label={`Ver detalles de ${product.name}`}>
           {/* Skeleton loader */}
           {!imageLoaded && (
@@ -105,7 +110,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             'absolute right-3 top-3 h-9 w-9 rounded-full opacity-0 transition-opacity group-hover:opacity-100',
             isWishlisted && 'opacity-100'
           )}
-          onClick={() => setIsWishlisted(!isWishlisted)}
+          onClick={() => setIsWishlisted(toggleProductFavorite(product.id))}
           aria-label={isWishlisted ? 'Quitar de favoritos' : 'Añadir a favoritos'}
           aria-pressed={isWishlisted}
         >
@@ -120,7 +125,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         {/* Quick Actions */}
         <div
           className={cn(
-            'absolute bottom-0 left-0 right-0 flex gap-2 bg-gradient-to-t from-foreground/80 to-transparent p-4 pt-8 transition-opacity duration-300',
+            'absolute bottom-0 left-0 right-0 flex gap-2 bg-linear-to-t from-foreground/80 to-transparent p-4 pt-8 transition-opacity duration-300',
             isHovered ? 'opacity-100' : 'opacity-0'
           )}
         >

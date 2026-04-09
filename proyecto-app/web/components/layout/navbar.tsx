@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { clearAuthSession, getStoredUser, logout, resolveCurrentUser } from '@/lib/services/auth';
 import { getCart } from '@/lib/services/cart';
+import { toast } from '@/hooks/use-toast';
 import type { User as AppUser } from '@/types';
 import {
   Sheet,
@@ -78,18 +79,22 @@ export function Navbar() {
     clearAuthSession();
     setUser(null);
     setCartCount(0);
+    toast({
+      title: 'Sesión cerrada',
+      description: 'Cerraste sesión correctamente.',
+    });
     router.push('/');
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/catalogo/hombre?search=${encodeURIComponent(searchQuery)}`;
+      window.location.href = `/catalogo/todos?search=${encodeURIComponent(searchQuery)}`;
     }
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-8" aria-label="Navegación principal">
         {/* Mobile menu */}
         <Sheet>
@@ -129,8 +134,14 @@ export function Navbar() {
               </Link>
               {user?.role === 'customer' && (
                 <>
+                  <Link href="/mi-cuenta" className="text-lg font-medium text-muted-foreground hover:text-accent">
+                    Mi cuenta
+                  </Link>
                   <Link href="/carrito" className="text-lg font-medium text-muted-foreground hover:text-accent">
                     Carrito
+                  </Link>
+                  <Link href="/mi-cuenta/favoritos" className="text-lg font-medium text-muted-foreground hover:text-accent">
+                    Favoritos
                   </Link>
                   <Link href="/mi-cuenta/pedidos" className="text-lg font-medium text-muted-foreground hover:text-accent">
                     Mis pedidos
@@ -261,7 +272,13 @@ export function Navbar() {
                   ) : (
                     <>
                       <DropdownMenuItem asChild>
+                        <Link href="/mi-cuenta">Mi cuenta</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
                         <Link href="/carrito">Carrito</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/mi-cuenta/favoritos">Favoritos</Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link href="/mi-cuenta/pedidos">Mis pedidos</Link>
@@ -276,8 +293,10 @@ export function Navbar() {
           </DropdownMenu>
 
           {/* Wishlist */}
-          <Button variant="ghost" size="icon" aria-label="Lista de deseos" className="hidden sm:flex">
-            <Heart className="h-5 w-5" />
+          <Button variant="ghost" size="icon" aria-label="Lista de deseos" className="hidden sm:flex" asChild>
+            <Link href="/mi-cuenta/favoritos">
+              <Heart className="h-5 w-5" />
+            </Link>
           </Button>
 
           {/* Cart */}
