@@ -35,7 +35,8 @@ MYSQL_ADDON_PORT=3306
 MYSQL_ADDON_URI=mysql://user:password@mysql:3306/modacom
 BACKEND_PORT=5000
 FRONTEND_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_API_URL=http://localhost:5000
+INTERNAL_API_URL=http://backend:5000
 PASSWORD_RESET_TOKEN_EXPIRES_IN=1h
 FRONTEND_RESET_PASSWORD_URL=http://localhost:3000/recuperar-password
 # También aceptado: EMAIL_API_KEY
@@ -45,6 +46,8 @@ RESEND_EMAIL_DOMAIN=tudominio.com
 # Optional: override sender address/display name
 # RESEND_FROM_EMAIL=ModaCom <noreply@tudominio.com>
 ```
+
+Nota Docker: `NEXT_PUBLIC_API_URL` lo usa el navegador, mientras `INTERNAL_API_URL` lo usa Next.js en renderizado del servidor dentro del contenedor `web`.
 
 ## Levantar con Docker Compose
 
