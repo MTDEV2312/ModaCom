@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { Heart, ShoppingBag, Truck, RefreshCw, Shield, Minus, Plus, Check, AlertCircle } from 'lucide-react';
 import { getProductBySlug } from '@/lib/services/products';
 import { addToCart } from '@/lib/services/cart';
+import { isProductFavorite, toggleProductFavorite } from '@/lib/services/favorites';
 import type { Product } from '@/types';
 import { formatCurrency } from '@/lib/format';
 
@@ -44,6 +45,7 @@ export default function ProductDetailPage() {
       const response = await getProductBySlug(slug);
       if (response.success && response.data) {
         setProduct(response.data);
+        setIsWishlisted(isProductFavorite(response.data.id));
         if (response.data.sizes.length > 0) {
           setSelectedSize(response.data.sizes.find(s => s.available)?.name || '');
         }
@@ -150,7 +152,7 @@ export default function ProductDetailPage() {
           <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
             {/* Image Gallery */}
             <div className="space-y-4">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-muted">
+              <div className="relative aspect-3/4 overflow-hidden rounded-xl bg-muted">
                 <Image
                   src={product.images[activeImage] || '/images/placeholder-product.jpg'}
                   alt={product.name}
@@ -344,7 +346,7 @@ export default function ProductDetailPage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  onClick={() => setIsWishlisted(toggleProductFavorite(product.id))}
                   aria-label={isWishlisted ? 'Quitar de favoritos' : 'Añadir a favoritos'}
                   aria-pressed={isWishlisted}
                 >
@@ -397,7 +399,7 @@ function ProductDetailSkeleton() {
   return (
     <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
       <div className="space-y-4">
-        <Skeleton className="aspect-[3/4] w-full rounded-xl" />
+        <Skeleton className="aspect-3/4 w-full rounded-xl" />
         <div className="flex gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="aspect-square w-20 rounded-lg" />
