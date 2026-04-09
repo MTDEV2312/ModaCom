@@ -1,0 +1,804 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ModaCom Backend API",
+    "version": "2.0.0",
+    "description": "API REST de ModaCom. Backend funcional y validado en Docker."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local"
+    }
+  ],
+  "tags": [
+    { "name": "Health" },
+    { "name": "Auth" },
+    { "name": "Addresses" },
+    { "name": "Catalog" },
+    { "name": "Contact" },
+    { "name": "Shop" },
+    { "name": "Admin" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "ApiEnvelope": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {},
+          "message": { "type": "string" }
+        },
+        "required": ["success", "data"]
+      },
+      "Paginated": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer" },
+          "pageSize": { "type": "integer" },
+          "totalItems": { "type": "integer" },
+          "totalPages": { "type": "integer" }
+        },
+        "required": ["page", "pageSize", "totalItems", "totalPages"]
+      },
+      "RegisterBody": {
+        "type": "object",
+        "required": ["email", "password", "confirmPassword", "firstName", "lastName", "acceptTerms"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 8 },
+          "confirmPassword": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "acceptTerms": { "type": "boolean" }
+        }
+      },
+      "LoginBody": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        }
+      },
+      "RecoverBody": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": { "type": "string", "format": "email" }
+        }
+      },
+      "ResetBody": {
+        "type": "object",
+        "required": ["token", "password", "confirmPassword"],
+        "properties": {
+          "token": { "type": "string" },
+          "password": { "type": "string", "minLength": 8 },
+          "confirmPassword": { "type": "string" }
+        }
+      },
+      "RefreshBody": {
+        "type": "object",
+        "required": ["refreshToken"],
+        "properties": {
+          "refreshToken": { "type": "string" }
+        }
+      },
+      "AddressBody": {
+        "type": "object",
+        "required": ["street", "city", "state", "postalCode", "country"],
+        "properties": {
+          "street": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "postalCode": { "type": "string" },
+          "country": { "type": "string" },
+          "isDefault": { "type": "boolean" }
+        }
+      },
+      "AddressUpdateBody": {
+        "type": "object",
+        "properties": {
+          "street": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "postalCode": { "type": "string" },
+          "country": { "type": "string" },
+          "isDefault": { "type": "boolean" }
+        }
+      },
+      "ContactBody": {
+        "type": "object",
+        "required": ["name", "email", "subject", "message"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "phone": { "type": "string" },
+          "subject": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "CartAddItemBody": {
+        "type": "object",
+        "required": ["productId", "quantity", "sizeName", "colorName"],
+        "properties": {
+          "productId": { "type": "integer" },
+          "quantity": { "type": "integer", "minimum": 1 },
+          "sizeName": { "type": "string" },
+          "colorName": { "type": "string" }
+        }
+      },
+      "CartUpdateItemBody": {
+        "type": "object",
+        "required": ["quantity"],
+        "properties": {
+          "quantity": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "CreateOrderBody": {
+        "type": "object",
+        "required": ["addressId"],
+        "properties": {
+          "addressId": { "type": "integer" }
+        }
+      },
+      "OfferItem": {
+        "type": "object",
+        "required": ["id", "title", "description", "discountPercentage", "image", "validFrom", "validUntil", "active", "applicableCategories"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "discountPercentage": { "type": "number" },
+          "code": { "type": "string" },
+          "image": { "type": "string" },
+          "validFrom": { "type": "string", "format": "date-time" },
+          "validUntil": { "type": "string", "format": "date-time" },
+          "active": { "type": "boolean" },
+          "applicableCategories": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "PasswordResetEvent": {
+        "type": "object",
+        "required": ["id", "userId", "expiresAt", "status", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "userEmail": { "type": "string", "format": "email" },
+          "providerMessageId": { "type": "string" },
+          "requestedIp": { "type": "string" },
+          "requestedUserAgent": { "type": "string" },
+          "usedIp": { "type": "string" },
+          "usedUserAgent": { "type": "string" },
+          "expiresAt": { "type": "string", "format": "date-time" },
+          "usedAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["active", "used", "expired"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PasswordResetEventsResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PasswordResetEvent" }
+          },
+          "pagination": { "$ref": "#/components/schemas/Paginated" },
+          "message": { "type": "string" }
+        },
+        "required": ["success", "data", "pagination"]
+      },
+      "OfferListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OfferItem" }
+          },
+          "message": { "type": "string" }
+        },
+        "required": ["success", "data"]
+      },
+      "AdminContactStatusBody": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["new", "in_progress", "resolved"]
+          }
+        }
+      },
+      "AdminOrderStatusBody": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["pending", "confirmed", "cancelled"]
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Healthcheck de backend y DB",
+        "responses": {
+          "200": { "description": "OK" },
+          "500": { "description": "DB disconnected" }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Registro de usuario customer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterBody" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Cuenta creada" },
+          "409": { "description": "Email ya registrado" }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login con access/refresh",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login exitoso" },
+          "401": { "description": "Credenciales invalidas" }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Perfil autenticado",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Perfil" },
+          "401": { "description": "No autenticado" }
+        }
+      }
+    },
+    "/api/v1/auth/recover-password": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Solicitar recuperacion de contrasena",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RecoverBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Respuesta generica anti-enumeracion" },
+          "429": { "description": "Rate limit recover" }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Rotar refresh token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RefreshBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token renovado" },
+          "401": { "description": "Refresh invalido" }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout y revocacion de refresh",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RefreshBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Sesion cerrada" }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Reset de contrasena con token one-time",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ResetBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Contrasena actualizada" },
+          "400": { "description": "Token invalido o expirado" },
+          "429": { "description": "Rate limit reset" }
+        }
+      }
+    },
+    "/api/v1/addresses": {
+      "get": {
+        "tags": ["Addresses"],
+        "summary": "Listar direcciones del usuario",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Addresses"],
+        "summary": "Crear direccion",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AddressBody" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Creada" } }
+      }
+    },
+    "/api/v1/addresses/{id}": {
+      "patch": {
+        "tags": ["Addresses"],
+        "summary": "Actualizar direccion",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AddressUpdateBody" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Actualizada" } }
+      },
+      "delete": {
+        "tags": ["Addresses"],
+        "summary": "Eliminar direccion",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Eliminada" } }
+      }
+    },
+    "/api/v1/addresses/{id}/default": {
+      "patch": {
+        "tags": ["Addresses"],
+        "summary": "Marcar direccion por defecto",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Direccion principal actualizada" } }
+      }
+    },
+    "/api/v1/categories": {
+      "get": {
+        "tags": ["Catalog"],
+        "summary": "Listar categorias activas",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "tags": ["Catalog"],
+        "summary": "Listar productos con filtros",
+        "parameters": [
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "minPrice", "in": "query", "schema": { "type": "number" } },
+          { "name": "maxPrice", "in": "query", "schema": { "type": "number" } },
+          { "name": "sizes", "in": "query", "schema": { "type": "string" } },
+          { "name": "colors", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "sortBy", "in": "query", "schema": { "type": "string", "enum": ["price-asc", "price-desc", "newest", "name"] } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/v1/products/featured": {
+      "get": {
+        "tags": ["Catalog"],
+        "summary": "Productos destacados",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/v1/products/new-arrivals": {
+      "get": {
+        "tags": ["Catalog"],
+        "summary": "Nuevos ingresos",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/v1/products/{slug}": {
+      "get": {
+        "tags": ["Catalog"],
+        "summary": "Detalle de producto",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "404": { "description": "No encontrado" }
+        }
+      }
+    },
+    "/api/v1/offers": {
+      "get": {
+        "tags": ["Catalog"],
+        "summary": "Ofertas activas en vigencia",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OfferListResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/offers/all": {
+      "get": {
+        "tags": ["Catalog"],
+        "summary": "Todas las ofertas",
+        "parameters": [
+          { "name": "includeInactive", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OfferListResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contact/messages": {
+      "post": {
+        "tags": ["Contact"],
+        "summary": "Crear mensaje de contacto",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ContactBody" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Creado" },
+          "429": { "description": "Rate limit contact" }
+        }
+      }
+    },
+    "/api/v1/cart": {
+      "get": {
+        "tags": ["Shop"],
+        "summary": "Obtener carrito activo",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "tags": ["Shop"],
+        "summary": "Vaciar carrito",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Carrito vaciado" } }
+      }
+    },
+    "/api/v1/cart/items": {
+      "post": {
+        "tags": ["Shop"],
+        "summary": "Agregar item al carrito",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CartAddItemBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Item agregado" },
+          "409": { "description": "Stock insuficiente" }
+        }
+      }
+    },
+    "/api/v1/cart/items/{itemId}": {
+      "patch": {
+        "tags": ["Shop"],
+        "summary": "Actualizar cantidad de item",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CartUpdateItemBody" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Actualizado" },
+          "404": { "description": "Item no encontrado" },
+          "409": { "description": "Stock insuficiente" }
+        }
+      },
+      "delete": {
+        "tags": ["Shop"],
+        "summary": "Eliminar item del carrito",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "itemId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Eliminado" },
+          "404": { "description": "Item no encontrado" }
+        }
+      }
+    },
+    "/api/v1/orders": {
+      "post": {
+        "tags": ["Shop"],
+        "summary": "Crear pedido desde carrito",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateOrderBody" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Pedido creado" },
+          "400": { "description": "Carrito vacio" },
+          "404": { "description": "Direccion no encontrada" },
+          "409": { "description": "Stock insuficiente" }
+        }
+      },
+      "get": {
+        "tags": ["Shop"],
+        "summary": "Listar pedidos del usuario",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/v1/admin/categories": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Listar categorias admin",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" }, "403": { "description": "Solo admin" } }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Crear categoria",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "Creada" } }
+      }
+    },
+    "/api/v1/admin/categories/{id}": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Actualizar categoria",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Actualizada" } }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Eliminar categoria",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Eliminada" },
+          "409": { "description": "Categoria con productos asociados" }
+        }
+      }
+    },
+    "/api/v1/admin/offers": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Listar promociones admin",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Crear promocion",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "Creada" } }
+      }
+    },
+    "/api/v1/admin/offers/{id}": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Actualizar promocion",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Actualizada" } }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Eliminar promocion",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Eliminada" } }
+      }
+    },
+    "/api/v1/admin/products": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Crear producto",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "Creado" } }
+      }
+    },
+    "/api/v1/admin/products/{id}": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Actualizar producto",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Actualizado" } }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Eliminar producto",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "Eliminado" } }
+      }
+    },
+    "/api/v1/admin/contact-messages": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Listar mensajes de contacto",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/v1/admin/contact-messages/{id}/status": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Actualizar estado de mensaje de contacto",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminContactStatusBody" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Estado actualizado" } }
+      }
+    },
+    "/api/v1/admin/orders": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Listar pedidos",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/v1/admin/orders/{id}/status": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Actualizar estado de pedido",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AdminOrderStatusBody" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Estado actualizado" } }
+      }
+    },
+    "/api/v1/admin/security/password-reset-events": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Auditoria de eventos de reset",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } },
+          { "name": "email", "in": "query", "schema": { "type": "string", "format": "email" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PasswordResetEventsResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

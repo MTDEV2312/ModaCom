@@ -1,0 +1,62 @@
+import jwt from "jsonwebtoken";
+import { env } from "../config/env";
+import { sendApiError } from "./api-error";
+
+export interface AuthPayload {
+  userId: number;
+  role: "customer" | "admin";
+  email: string;
+}
+
+export interface RefreshPayload {
+  userId: number;
+  tokenId: string;
+}
+
+export function signAccessToken(payload: AuthPayload) {
+  return jwt.sign(payload, env.jwtSecret, {
+    expiresIn: env.jwtExpiresIn,
+  });
+}
+
+export function signRefreshToken(payload: RefreshPayload) {
+  return jwt.sign(payload, env.jwtSecret, {
+    expiresIn: env.jwtRefreshExpiresIn,
+  });
+}
+
+export function verifyRefreshToken(token: string) {
+  return jwt.verify(token, env.jwtSecret) as RefreshPayload;
+}
+
+// Backward compatibility for existing callers.
+export const signAuthToken = signAccessToken;
+
+export function requireAuth(req: any, res: any, next: any) {
+  const authorization = req.headers.authorization;
+  if (!authorization || !authorization.startsWith("Bearer ")) {
+    return sendApiError(res, 401, "AUTH_REQUIRED", "Token requerido");
+  }
+
+  const token = authorization.replace("Bearer ", "").trim();
+
+  try {
+    const payload = jwt.verify(token, env.jwtSecret) as AuthPayload;
+    req.auth = payload;
+    return next();
+  } catch (_error) {
+    return sendApiError(res, 401, "AUTH_INVALID", "Token inválido o expirado");
+  }
+}
+
+export function requireAdmin(req: any, res: any, next: any) {
+  if (!req.auth) {
+    return sendApiError(res, 401, "AUTH_REQUIRED", "Sesión no autenticada");
+  }
+
+  if (req.auth.role !== "admin") {
+    return sendApiError(res, 403, "FORBIDDEN", "Acceso solo para administradores");
+  }
+
+  return next();
+}

@@ -1,0 +1,387 @@
+{
+  "info": {
+    "name": "ModaCom Backend API",
+    "description": "Coleccion completa para probar todos los endpoints del backend v1.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "productId", "value": "1" },
+    { "key": "addressId", "value": "1" },
+    { "key": "itemId", "value": "1" },
+    { "key": "categoryId", "value": "1" },
+    { "key": "offerId", "value": "1" },
+    { "key": "orderId", "value": "1" },
+    { "key": "messageId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /api/health",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/v1/auth/register",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"cliente@example.com\",\n  \"password\": \"Password123!\",\n  \"confirmPassword\": \"Password123!\",\n  \"firstName\": \"Ana\",\n  \"lastName\": \"Perez\",\n  \"acceptTerms\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "register"] }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?.token) { pm.collectionVariables.set('accessToken', json.data.token); pm.environment.set('accessToken', json.data.token); }",
+                  "if (json?.data?.refreshToken) { pm.collectionVariables.set('refreshToken', json.data.refreshToken); pm.environment.set('refreshToken', json.data.refreshToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"cliente@example.com\",\n  \"password\": \"Password123!\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "login"] }
+          }
+        },
+        {
+          "name": "GET /api/v1/auth/me",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "me"] }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/recover-password",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"cliente@example.com\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/recover-password", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "recover-password"] }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/refresh",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/refresh", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "refresh"] }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/logout", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "logout"] }
+          }
+        },
+        {
+          "name": "POST /api/v1/auth/reset-password",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"RESET_TOKEN_AQUI\",\n  \"password\": \"Password123!\",\n  \"confirmPassword\": \"Password123!\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["api", "v1", "auth", "reset-password"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Addresses",
+      "item": [
+        {
+          "name": "GET /api/v1/addresses",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/addresses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "addresses"] } }
+        },
+        {
+          "name": "POST /api/v1/addresses",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"street\": \"Av. Siempre Viva 742\",\n  \"city\": \"Santiago\",\n  \"state\": \"RM\",\n  \"postalCode\": \"8320000\",\n  \"country\": \"Chile\",\n  \"isDefault\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/addresses", "host": ["{{baseUrl}}"], "path": ["api", "v1", "addresses"] }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/addresses/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"street\": \"Av. Siempre Viva 744\",\n  \"city\": \"Santiago\",\n  \"state\": \"RM\",\n  \"postalCode\": \"8320001\",\n  \"country\": \"Chile\",\n  \"isDefault\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/addresses/{{addressId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "addresses", "{{addressId}}"] }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/addresses/:id/default",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/api/v1/addresses/{{addressId}}/default", "host": ["{{baseUrl}}"], "path": ["api", "v1", "addresses", "{{addressId}}", "default"] }
+          }
+        },
+        {
+          "name": "DELETE /api/v1/addresses/:id",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/api/v1/addresses/{{addressId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "addresses", "{{addressId}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "GET /api/v1/categories",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": { "raw": "{{baseUrl}}/api/v1/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "categories"] } }
+        },
+        {
+          "name": "GET /api/v1/products",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": { "raw": "{{baseUrl}}/api/v1/products?page=1&pageSize=12", "host": ["{{baseUrl}}"], "path": ["api", "v1", "products"], "query": [ { "key": "page", "value": "1" }, { "key": "pageSize", "value": "12" } ] }
+          }
+        },
+        {
+          "name": "GET /api/v1/products/featured",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": { "raw": "{{baseUrl}}/api/v1/products/featured", "host": ["{{baseUrl}}"], "path": ["api", "v1", "products", "featured"] } }
+        },
+        {
+          "name": "GET /api/v1/products/new-arrivals",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": { "raw": "{{baseUrl}}/api/v1/products/new-arrivals", "host": ["{{baseUrl}}"], "path": ["api", "v1", "products", "new-arrivals"] } }
+        },
+        {
+          "name": "GET /api/v1/products/:slug",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": { "raw": "{{baseUrl}}/api/v1/products/chaqueta-premium-wool", "host": ["{{baseUrl}}"], "path": ["api", "v1", "products", "chaqueta-premium-wool"] } }
+        },
+        {
+          "name": "GET /api/v1/offers",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": { "raw": "{{baseUrl}}/api/v1/offers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "offers"] } }
+        },
+        {
+          "name": "GET /api/v1/offers/all",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": { "raw": "{{baseUrl}}/api/v1/offers/all?includeInactive=true", "host": ["{{baseUrl}}"], "path": ["api", "v1", "offers", "all"], "query": [ { "key": "includeInactive", "value": "true" } ] } }
+        }
+      ]
+    },
+    {
+      "name": "Contact",
+      "item": [
+        {
+          "name": "POST /api/v1/contact/messages",
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Ana Perez\",\n  \"email\": \"ana@example.com\",\n  \"phone\": \"+56911111111\",\n  \"subject\": \"Consulta general\",\n  \"message\": \"Hola, necesito ayuda con mi pedido.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/contact/messages", "host": ["{{baseUrl}}"], "path": ["api", "v1", "contact", "messages"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shop",
+      "item": [
+        { "name": "GET /api/v1/cart", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/cart", "host": ["{{baseUrl}}"], "path": ["api", "v1", "cart"] } } },
+        {
+          "name": "POST /api/v1/cart/items",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"productId\": 1,\n  \"quantity\": 1,\n  \"sizeName\": \"M\",\n  \"colorName\": \"Negro\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/cart/items", "host": ["{{baseUrl}}"], "path": ["api", "v1", "cart", "items"] }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/cart/items/:itemId",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"quantity\": 2\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/cart/items/{{itemId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "cart", "items", "{{itemId}}"] }
+          }
+        },
+        {
+          "name": "DELETE /api/v1/cart/items/:itemId",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/v1/cart/items/{{itemId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "cart", "items", "{{itemId}}"] } }
+        },
+        { "name": "DELETE /api/v1/cart", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/v1/cart", "host": ["{{baseUrl}}"], "path": ["api", "v1", "cart"] } } },
+        {
+          "name": "POST /api/v1/orders",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"addressId\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/orders", "host": ["{{baseUrl}}"], "path": ["api", "v1", "orders"] }
+          }
+        },
+        { "name": "GET /api/v1/orders", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/orders", "host": ["{{baseUrl}}"], "path": ["api", "v1", "orders"] } } }
+      ]
+    },
+    {
+      "name": "Admin / Categories",
+      "item": [
+        { "name": "GET /api/v1/admin/categories", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/admin/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "categories"] } } },
+        {
+          "name": "POST /api/v1/admin/categories",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Hombre\",\n  \"slug\": \"hombre\",\n  \"description\": \"Colección masculina\",\n  \"image\": \"https://example.com/hombre.jpg\",\n  \"isActive\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "categories"] }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/admin/categories/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Mujer\",\n  \"slug\": \"mujer\",\n  \"description\": \"Colección femenina\",\n  \"image\": \"https://example.com/mujer.jpg\",\n  \"isActive\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "categories", "{{categoryId}}"] }
+          }
+        },
+        { "name": "DELETE /api/v1/admin/categories/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "categories", "{{categoryId}}"] } } }
+      ]
+    },
+    {
+      "name": "Admin / Offers",
+      "item": [
+        { "name": "GET /api/v1/admin/offers", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/admin/offers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "offers"] } } },
+        {
+          "name": "POST /api/v1/admin/offers",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Rebajas de Temporada\",\n  \"description\": \"Hasta 40% de descuento\",\n  \"discountPercentage\": 40,\n  \"code\": \"WINTER40\",\n  \"image\": \"https://example.com/offer.jpg\",\n  \"validFrom\": \"2026-04-05T00:00:00.000Z\",\n  \"validUntil\": \"2026-12-31T23:59:59.000Z\",\n  \"active\": true,\n  \"applicableCategories\": [\"hombre\", \"mujer\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/offers", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "offers"] }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/admin/offers/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Rebajas de Temporada 2\",\n  \"description\": \"Actualizada\",\n  \"discountPercentage\": 35,\n  \"code\": \"WINTER35\",\n  \"image\": \"https://example.com/offer2.jpg\",\n  \"validFrom\": \"2026-04-05T00:00:00.000Z\",\n  \"validUntil\": \"2026-12-31T23:59:59.000Z\",\n  \"active\": true,\n  \"applicableCategories\": [\"mujer\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/offers/{{offerId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "offers", "{{offerId}}"] }
+          }
+        },
+        { "name": "DELETE /api/v1/admin/offers/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/v1/admin/offers/{{offerId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "offers", "{{offerId}}"] } } }
+      ]
+    },
+    {
+      "name": "Admin / Products",
+      "item": [
+        {
+          "name": "POST /api/v1/admin/products",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Producto demo\",\n  \"description\": \"Producto demo\",\n  \"price\": 19.99,\n  \"originalPrice\": 29.99,\n  \"categorySlug\": \"hombre\",\n  \"stock\": 10,\n  \"featured\": true,\n  \"isNew\": true,\n  \"images\": [\"https://example.com/product.jpg\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/products", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "products"] }
+          }
+        },
+        {
+          "name": "PATCH /api/v1/admin/products/:id",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Producto demo actualizado\",\n  \"description\": \"Actualizado\",\n  \"price\": 25.5,\n  \"originalPrice\": 35.5,\n  \"categorySlug\": \"mujer\",\n  \"stock\": 12,\n  \"featured\": false,\n  \"isNew\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "products", "{{productId}}"] }
+          }
+        },
+        { "name": "DELETE /api/v1/admin/products/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/v1/admin/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "products", "{{productId}}"] } } }
+      ]
+    },
+    {
+      "name": "Admin / Contact Messages",
+      "item": [
+        { "name": "GET /api/v1/admin/contact-messages", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/admin/contact-messages", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "contact-messages"] } } },
+        {
+          "name": "PATCH /api/v1/admin/contact-messages/:id/status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"resolved\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/contact-messages/{{messageId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "contact-messages", "{{messageId}}", "status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin / Orders",
+      "item": [
+        { "name": "GET /api/v1/admin/orders", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/admin/orders", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "orders"] } } },
+        {
+          "name": "PATCH /api/v1/admin/orders/:id/status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"confirmed\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "v1", "admin", "orders", "{{orderId}}", "status"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin / Security",
+      "item": [
+        {
+          "name": "GET /api/v1/admin/security/password-reset-events",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/security/password-reset-events?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "security", "password-reset-events"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
