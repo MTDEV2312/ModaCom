@@ -85,3 +85,4 @@ next-env.d.ts
 /proyecto-app/backend/.windsurf
 .playwright-mcp
 
+*dist/
