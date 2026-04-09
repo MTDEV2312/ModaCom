@@ -90,9 +90,14 @@ export default function MyAccountPage() {
           <h1 className="font-serif text-3xl font-semibold">Mi cuenta</h1>
           <p className="mt-2 text-muted-foreground">Gestioná tus direcciones y revisá tus pedidos.</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/mi-cuenta/pedidos">Ver mis pedidos</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/mi-cuenta/favoritos">Ver favoritos</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/mi-cuenta/pedidos">Ver mis pedidos</Link>
+          </Button>
+        </div>
       </div>
 
       {feedback ? (
