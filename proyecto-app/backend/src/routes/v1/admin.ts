@@ -1,4 +1,7 @@
 import { Router } from "express";
+import { randomUUID } from "crypto";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
 import {
   Address,
   Category,
@@ -50,6 +53,69 @@ function slugify(value: string) {
     .trim()
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
+}
+
+function sanitizeImageUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item) => item.length > 0);
+}
+
+function resolveUploadPublicBase(req: any) {
+  return `${req.protocol}://${req.get("host")}`;
+}
+
+async function writeUploadedImageFromBase64(params: {
+  data: string;
+  originalName?: string;
+  contentType?: string;
+}) {
+  const dataUrlMatch = params.data.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+
+  const mimeType = dataUrlMatch ? dataUrlMatch[1] : params.contentType;
+  const base64Payload = dataUrlMatch ? dataUrlMatch[2] : params.data;
+
+  if (!mimeType || !/^image\/(jpeg|jpg|png|webp|gif)$/.test(mimeType)) {
+    throw new Error("Tipo de imagen no soportado");
+  }
+
+  const normalizedBase64 = String(base64Payload).trim();
+  if (!normalizedBase64) {
+    throw new Error("Imagen vacia");
+  }
+
+  const bytes = Buffer.from(normalizedBase64, "base64");
+  const maxBytes = 5 * 1024 * 1024;
+  if (bytes.length === 0 || bytes.length > maxBytes) {
+    throw new Error("La imagen excede 5MB o no es valida");
+  }
+
+  const extensionMap: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
+
+  const extension = extensionMap[mimeType] ?? "jpg";
+  const safeOriginal = (params.originalName ?? "image")
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]/g, "-")
+    .replace(/\.+/g, ".")
+    .replace(/^-+|-+$/g, "");
+  const baseName = safeOriginal.replace(/\.[a-z0-9]+$/i, "") || "image";
+  const fileName = `${baseName}-${randomUUID()}.${extension}`;
+
+  const uploadsRoot = path.join(process.cwd(), "uploads", "products");
+  await mkdir(uploadsRoot, { recursive: true });
+  await writeFile(path.join(uploadsRoot, fileName), bytes);
+
+  return `/uploads/products/${fileName}`;
 }
 
 async function mapProductById(id: number) {
@@ -577,6 +643,41 @@ adminV1Router.delete("/admin/offers/:id", requireAuth, requireAdmin, async (req:
   }
 });
 
+adminV1Router.post("/admin/uploads/product-image", requireAuth, requireAdmin, async (req: any, res: any) => {
+  try {
+    const body = req.body ?? {};
+    const data = typeof body.data === "string" ? body.data : "";
+    const fileName = typeof body.fileName === "string" ? body.fileName : undefined;
+    const contentType = typeof body.contentType === "string" ? body.contentType : undefined;
+
+    if (!data) {
+      return res.status(400).json({
+        success: false,
+        data: null,
+        message: "Debes enviar la imagen en base64",
+      });
+    }
+
+    const relativeUrl = await writeUploadedImageFromBase64({ data, originalName: fileName, contentType });
+    const absoluteUrl = `${resolveUploadPublicBase(req)}${relativeUrl}`;
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        url: absoluteUrl,
+        path: relativeUrl,
+      },
+      message: "Imagen subida exitosamente",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      data: null,
+      message: error instanceof Error ? error.message : "No se pudo subir la imagen",
+    });
+  }
+});
+
 adminV1Router.post("/admin/products", requireAuth, requireAdmin, async (req: any, res: any) => {
   try {
     const { name, description, price, originalPrice, categorySlug, stock, featured, isNew, images, variants } = req.body ?? {};
@@ -607,9 +708,10 @@ adminV1Router.post("/admin/products", requireAuth, requireAdmin, async (req: any
       isActive: true,
     });
 
-    const imageList = Array.isArray(images) && images.length > 0 ? images : ["/images/placeholder-product.jpg"];
+    const imageList = sanitizeImageUrls(images);
+    const persistedImages = imageList.length > 0 ? imageList : ["/images/placeholder-product.jpg"];
     await ProductImage.bulkCreate(
-      imageList.map((url: string, index: number) => ({
+      persistedImages.map((url, index) => ({
         productId: product.id,
         url,
         sortOrder: index,
@@ -726,7 +828,7 @@ adminV1Router.patch("/admin/products/:id", requireAuth, requireAdmin, async (req
     if (!product) {
       return res.status(404).json({ success: false, data: null, message: "Producto no encontrado" });
     }
-    const { name, description, price, originalPrice, categorySlug, stock, featured, isNew, variants } = req.body ?? {};
+    const { name, description, price, originalPrice, categorySlug, stock, featured, isNew, variants, images } = req.body ?? {};
 
     let categoryId = product.categoryId;
     if (categorySlug) {
@@ -740,6 +842,20 @@ adminV1Router.patch("/admin/products/:id", requireAuth, requireAdmin, async (req
     await ProductVariant.destroy({ where: { productId: product.id } });
     await ProductSize.destroy({ where: { productId: product.id } });
     await ProductColor.destroy({ where: { productId: product.id } });
+
+    if (images !== undefined) {
+      const imageList = sanitizeImageUrls(images);
+      const persistedImages = imageList.length > 0 ? imageList : ["/images/placeholder-product.jpg"];
+
+      await ProductImage.destroy({ where: { productId: product.id } });
+      await ProductImage.bulkCreate(
+        persistedImages.map((url, index) => ({
+          productId: product.id,
+          url,
+          sortOrder: index,
+        })),
+      );
+    }
 
     const normalizedVariants = Array.isArray(variants) ? variants : [];
     let nextStock = Number(stock ?? product.stock ?? 0);

@@ -25,6 +25,9 @@ let sendEmailTransportOverride: SendEmailTransport | null = null;
 function resolveFrontendResetUrl(token: string) {
   const base = env.frontendResetPasswordUrl.trim();
   const url = new URL(base);
+  if (url.pathname.endsWith("/recuperar-password")) {
+    url.pathname = url.pathname.replace(/\/recuperar-password$/, "/reset-password");
+  }
   url.searchParams.set("token", token);
   return url.toString();
 }

@@ -193,7 +193,6 @@ catalogV1Router.get("/products", validateQuery(productListQuerySchema), async (r
       offset: (page - 1) * pageSize,
       limit: pageSize,
       distinct: true,
-      subQuery: false,
     };
 
     switch (sortBy) {

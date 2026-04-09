@@ -26,10 +26,12 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 const docsDir = path.join(__dirname, "..", "docs");
+const uploadsDir = path.join(__dirname, "..", "uploads");
 const swaggerUiDir = path.dirname(require.resolve("swagger-ui-dist/swagger-ui.css"));
 
 app.use("/api/swagger-ui", express.static(swaggerUiDir));
 app.use("/api/docs-assets", express.static(docsDir));
+app.use("/uploads", express.static(uploadsDir));
 
 app.use("/api/v1/auth/recover-password", authRecoverRateLimit);
 app.use("/api/v1/auth/reset-password", authResetRateLimit);
