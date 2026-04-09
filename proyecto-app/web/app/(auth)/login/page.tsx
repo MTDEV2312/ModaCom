@@ -194,17 +194,6 @@ export default function LoginPage() {
           </Link>
         </p>
       </form>
-
-      {/* Demo credentials hint */}
-      <div className="mt-8 rounded-md bg-muted p-4 text-sm">
-        <p className="font-medium text-foreground">Credenciales de prueba:</p>
-        <p className="mt-1 text-muted-foreground">
-          Admin: admin@moda.com / admin123
-        </p>
-        <p className="text-muted-foreground">
-          Usuario: cualquier email válido con contraseña +6 caracteres
-        </p>
-      </div>
     </>
   );
 }
