@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { DM_Sans, Playfair_Display } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
+import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 
 const dmSans = DM_Sans({
@@ -81,6 +82,7 @@ export default function RootLayout({
           Saltar al contenido principal
         </a>
         {children}
+        <Toaster />
         <Analytics />
       </body>
     </html>
