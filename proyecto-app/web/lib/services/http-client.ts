@@ -193,8 +193,13 @@ export async function requestAuthenticatedJson<T>(path: string, options?: Reques
         method: options?.method ?? 'GET',
         reason: refreshError instanceof Error ? refreshError.message : 'unknown',
       });
-      clearAuthSession();
-      redirectToLogin();
+
+      // Only force logout when refresh token is truly invalid/expired.
+      if (refreshError instanceof ApiClientError && refreshError.status === 401) {
+        clearAuthSession();
+        redirectToLogin();
+      }
+
       throw refreshError instanceof Error ? refreshError : error;
     }
   }
